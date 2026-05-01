@@ -1,36 +1,26 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use lib::{Image, Layer};
 
 fn main() -> Result<()> {
     // TODO mkdir exports
+    simple_logger::init().context("Failed to initialize Simple Logger")?;
 
-    let mut img2 = Image::from_file("sample.jpg")?;
-    //
-    // let jump = 2; // make every second image
-    // for i in 1..=(255 / jump) {
-    //     img2.layer(Layer::AddWrapping(jump))
-    //         .save(&format!("exports/i-wrap-{}.jpg", jump * i))?;
-    //     // img3.layer(Layer::AddSaturating(16))
-    //     //     .save(&format!("exports/i-satu-{}.jpg", 16 * i))?;
-    // }
+    // load image
+    let img = Image::from_file("sample.jpg")?;
 
-    Image::from_file("sample.jpg")?
-        .layer(Layer::Invert)
-        .save("exports/inv.jpg");
+    img.clone()
+        .layer(&Layer::WrapBrightness(-20))
+        .save("step1.jpg")?
+        .layer(&Layer::Invert)
+        .save("step2.jpg")?;
 
-    Image::from_file("sample.jpg")?
-        .layer(Layer::AddWrapping(128))
-        .save("exports/wra.jpg");
+    // img.clone()
+    //     .layer(&Layer::Brightness(-50))
+    //     .save("bright.jpg")?;
 
-    Image::from_file("sample.jpg")?
-        .layer(Layer::Invert)
-        .layer(Layer::AddWrapping(128))
-        .save("exports/invwra.jpg");
-
-    Image::from_file("sample.jpg")?
-        .layer(Layer::AddWrapping(128))
-        .layer(Layer::Invert)
-        .save("exports/wrainv.jpg");
+    // img.clone()
+    //     .layer(&Layer::WrapBrightness(-50))
+    //     .save("wrap.jpg")?;
 
     Ok(())
 }

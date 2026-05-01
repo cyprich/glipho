@@ -6,4 +6,6 @@ edition = "2024"
 [dependencies]
 anyhow = "1.0.102"
 image = { version = "0.25.10" }
+log = "0.4.29"
 rayon = "1.12.0"
+simple_logger = "5.2.0"
