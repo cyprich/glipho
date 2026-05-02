@@ -53,5 +53,11 @@ impl Steps {
         Self::from_toml_string(&text)
     }
 
-    // TODO try load from file
+    pub fn is_saved(&self) -> bool {
+        if self.steps.is_empty() {
+            true
+        } else {
+            matches!(self.steps.last().unwrap(), Step::Save(_))
+        }
+    }
 }

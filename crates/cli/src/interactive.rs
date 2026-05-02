@@ -3,6 +3,7 @@ use std::fs;
 use anyhow::{Context, Error, Result};
 use dialoguer::{Confirm, Input, Select, theme::ColorfulTheme};
 use lib::{Image, Layer, Step, Steps};
+use log::warn;
 
 pub fn run(steps: Option<Steps>) -> Result<()> {
     println!("Welcome to Rusty Fotos!");
@@ -89,6 +90,9 @@ pub fn run(steps: Option<Steps>) -> Result<()> {
             }
             6 => match image.clone() {
                 Some(mut image) => {
+                    if !steps.is_saved() {
+                        warn!("Some steps might not be saved");
+                    }
                     for s in &steps.steps {
                         match s {
                             Step::Layer(layer) => {
@@ -182,22 +186,30 @@ fn add_step() -> Result<Step> {
 }
 
 fn add_step_layer() -> Result<Layer> {
-    let items = vec!["Brightness", "Wrapped Brightness", "Invert", "Reverse Bits"];
+    let items = vec![
+        "Brightness",
+        "Wrapped Brightness",
+        "Invert",
+        "Reverse Bits",
+        "Min",
+        "Max",
+    ];
     let selection = Select::with_theme(&ColorfulTheme::default())
         .with_prompt("What kind of layer do you want to add? (ESC to cancel)")
         .items(&items)
         .interact_opt()?;
 
     let theme = ColorfulTheme::default();
-    let number_input =
-        Input::<i16>::with_theme(&theme).with_prompt("Enter the amount (-255 to 255)");
+    let number_input = Input::<i16>::with_theme(&theme);
 
     match selection {
         Some(val) => match val {
             0 | 1 => {
-                let num = number_input.interact()?;
+                let num = number_input
+                    .with_prompt("Enter the amount (-255 to 255)")
+                    .interact()?;
                 if !(-255..=255).contains(&num) {
-                    Err(Error::msg("Invalid range"))
+                    Err(Error::msg("Value out of range"))
                 } else {
                     match val {
                         0 => Ok(Layer::Brightness(num)),
@@ -208,6 +220,20 @@ fn add_step_layer() -> Result<Layer> {
             }
             2 => Ok(Layer::Invert),
             3 => Ok(Layer::ReverseBits),
+            4 | 5 => {
+                let num = number_input
+                    .with_prompt("Enter the amount (0 to 255)")
+                    .interact()?;
+                if !(0..255).contains(&num) {
+                    Err(Error::msg("Value out of range"))
+                } else {
+                    match val {
+                        4 => Ok(Layer::Min(num as u8)),
+                        5 => Ok(Layer::Max(num as u8)),
+                        _ => Err(Error::msg("This was not supposed to happen...")),
+                    }
+                }
+            }
             _ => Err(Error::msg("This was not supposed to happen")),
         },
         None => Err(Error::msg("User cancelled")),

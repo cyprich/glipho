@@ -8,6 +8,8 @@ pub enum Layer {
     WrapBrightness(i16),
     Invert,
     ReverseBits,
+    Min(u8),
+    Max(u8),
 }
 
 impl Display for Layer {
@@ -17,6 +19,8 @@ impl Display for Layer {
             Layer::WrapBrightness(val) => format!("Wrapping Brightness {}", val),
             Layer::Invert => "Invert".into(),
             Layer::ReverseBits => "Reverse Bits".into(),
+            Layer::Min(val) => format!("Min {}", val),
+            Layer::Max(val) => format!("Max {}", val),
         };
 
         write!(f, "{}", result)

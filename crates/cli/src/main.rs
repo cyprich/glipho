@@ -1,8 +1,11 @@
-use std::fs;
+use std::{fs, time::Instant};
 
 use ::clap::Parser;
 use anyhow::{Context, Error, Result};
-use lib::{Image, Layer, Steps};
+use lib::{Image, Steps};
+use log::info;
+
+// use plotters::prelude::*;
 
 use crate::clap::Cli;
 
@@ -10,11 +13,11 @@ mod clap;
 mod interactive;
 
 fn main() -> Result<()> {
+    let time = Instant::now();
     // TODO mkdir exports
     simple_logger::init().context("Failed to initialize Simple Logger")?;
 
     let cli = Cli::parse();
-    dbg!(&cli);
 
     let steps = match &cli.steps_file {
         Some(val) => {
@@ -46,8 +49,57 @@ fn main() -> Result<()> {
             Image::from_file(&cli.image_file.unwrap()).context("Failed to load file")?;
         let steps = Steps::from_file(&cli.steps_file.unwrap()).context("Failed to load steps")?;
 
+        // chart(&image, "before.png")?;
         image.steps(&steps);
+        // chart(&image, "after.png")?;
     }
 
+    info!("Program finished in {}s", time.elapsed().as_secs_f32());
     Ok(())
 }
+
+// fn chart(image: &Image, name: &str) -> Result<()> {
+//     info!("Starting charts");
+//
+//     let mut x: Vec<i32> = vec![];
+//     let mut r: Vec<i32> = vec![];
+//     let mut g: Vec<i32> = vec![];
+//     let mut b: Vec<i32> = vec![];
+//
+//     for (i, pixel) in image.pixels().unwrap().enumerate() {
+//         x.push(i as i32);
+//         r.push(pixel.0[0].into());
+//         g.push(pixel.0[1].into());
+//         b.push(pixel.0[2].into());
+//     }
+//
+//     let root = BitMapBackend::new(name, (2000, 1000)).into_drawing_area();
+//     root.fill(&WHITE)?;
+//     let mut chart = ChartBuilder::on(&root).build_cartesian_2d(0..x.len(), 0..255)?;
+//
+//     info!("About to insert data");
+//
+//     chart.draw_series(LineSeries::new(
+//         r.iter().enumerate().map(|(x, y)| (x, *y)),
+//         &RED,
+//     ))?;
+//     info!("R done");
+//
+//     chart.draw_series(LineSeries::new(
+//         g.iter().enumerate().map(|(x, y)| (x, *y)),
+//         &GREEN,
+//     ))?;
+//     info!("G done");
+//
+//     chart.draw_series(LineSeries::new(
+//         b.iter().enumerate().map(|(x, y)| (x, *y)),
+//         &BLUE,
+//     ))?;
+//     info!("B done");
+//
+//     root.present()?;
+//
+//     info!("Charts done");
+//
+//     Ok(())
+// }

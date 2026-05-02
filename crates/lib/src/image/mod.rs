@@ -1,7 +1,10 @@
-use std::time::Instant;
+use std::{
+    cmp::{max, min},
+    time::Instant,
+};
 
 use anyhow::{Context, Result};
-use image::{DynamicImage, ImageReader, Rgb, buffer::PixelsMut};
+use image::{DynamicImage, ImageReader, Rgb, buffer::Pixels, buffer::PixelsMut};
 use log::info;
 
 use crate::{Layer, Step, Steps};
@@ -49,6 +52,8 @@ impl Image {
             },
             Layer::Invert => self.apply_closure(|x| *x = 255 - *x),
             Layer::ReverseBits => self.apply_closure(|x| *x = x.reverse_bits()),
+            Layer::Min(val) => self.apply_closure(|x| *x = max(*x, *val)),
+            Layer::Max(val) => self.apply_closure(|x| *x = min(*x, *val)),
         };
 
         info!(
@@ -86,14 +91,19 @@ impl Image {
     }
 
     pub fn steps(&mut self, steps: &Steps) -> &mut Self {
+        let mut result = self;
         for step in &steps.steps {
-            self.step(step);
+            result = result.step(step);
         }
 
-        self
+        result
     }
 
-    pub(crate) fn pixels_mut(&mut self) -> Option<PixelsMut<'_, Rgb<u8>>> {
+    pub fn pixels(&self) -> Option<Pixels<'_, Rgb<u8>>> {
+        self.img.as_rgb8().map(|x| x.pixels())
+    }
+
+    pub fn pixels_mut(&mut self) -> Option<PixelsMut<'_, Rgb<u8>>> {
         self.img.as_mut_rgb8().map(|x| x.pixels_mut())
     }
 
