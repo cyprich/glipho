@@ -4,10 +4,21 @@ Simple image manipulation software to make glitchy photos
 
 ## About
 
-With this ultra amazing program, you can apply various effects and glitches to images
+With this ultra amazingly cool program, you can apply various effects and glitches to images  
+Program loads an image, looks at it's pixels as numbers (`0` to `255`) and then applies different operations to each number
+These operations are called `Steps`
 
-### Layers
+### Steps
 
+Steps define sequence of actions, which will be applied to your image  
+One step can be either `Layer` or `Save`
+
+To define these steps, you can use either CLI in interactive mode or GUI  
+Steps can be exported to TOML file as used later
+
+#### Layers
+
+Layers are kind of effects that are applied to your image  
 In this table, you can see all currently supported layer types
 
 | Before                     | After                               | Layer                | Expected values | Description                                                                                                                             |
@@ -19,20 +30,29 @@ In this table, you can see all currently supported layer types
 | ![](./examples/sample.jpg) | ![](./examples/min.jpg)             | Min (192)            | `0` to `255`    | Applies minimal threshold to all pixels.                                                                                                |
 | ![](./examples/sample.jpg) | ![](./examples/max.jpg)             | Max (64)             | `0` to `255`    | Applies maximal threshold to all pixels.                                                                                                |
 
-Comes in two variants
-
-- CLI
-- GUI
+These might not be explained too well, it's best to try it yourself :)
 
 ## Usage
 
+Program comes in two variants
+
+- CLI - console app, best for servers and scripts, with possibility of interactive mode
+- GUI - desktop app or website (not sure yet)
+
 ### CLI
 
-You can run the program in two ways
+You can specify multiple flags
 
-- Script mode (default)
-- Interactive mode
+| Short flag | Long flag       | Description                            |
+| ---------- | --------------- | -------------------------------------- |
+| `-f`       | `--image-file`  | Path of file, which you want to modify |
+| `-s`       | `--steps-file`  | Path of file containing steps          |
+| `-i`       | `--interactive` | Run interactively                      |
+| `-h`       | `--help`        | Show help                              |
+
+So basically you have two ways of running the program - Interactively (with `-i`) or Non-interactively (without `-i`)  
+If you are running Non-interactively, you **have to** specify the `-f` and `-s` files, otherwise the program will have nothing to do and will crash
 
 ### GUI
 
-GUI version via [Dioxus](https://dioxuslabs.com/) coming soon
+GUI version via [Dioxus](https://dioxuslabs.com/) is coming soon
