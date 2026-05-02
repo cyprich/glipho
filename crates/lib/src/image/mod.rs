@@ -1,5 +1,6 @@
 use std::{
     cmp::{max, min},
+    fs,
     time::Instant,
 };
 
@@ -33,7 +34,9 @@ impl Image {
 
     pub fn save(&mut self, path: &str) -> Result<&mut Self> {
         let time = Instant::now();
-        self.img.save(format!("{}/{}", self.save_subfolder, path))?;
+        let path = format!("{}/{}", self.save_subfolder, path);
+        let _ = fs::remove_file(&path);
+        self.img.save(&path)?;
         info!("Saved '{}' in {}s", path, time.elapsed().as_secs_f32());
 
         Ok(self)
