@@ -1,0 +1,12 @@
+[[steps]]
+
+[steps.Layer]
+Brightness = 50
+
+[[steps]]
+
+[steps.Layer]
+WrapBrightness = 50
+
+[[steps]]
+Save = "result.jpg"

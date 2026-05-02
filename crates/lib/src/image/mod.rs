@@ -48,6 +48,7 @@ impl Image {
                 false => self.apply_closure(|x| *x = x.wrapping_sub(*val as u8)),
             },
             Layer::Invert => self.apply_closure(|x| *x = 255 - *x),
+            Layer::ReverseBits => self.apply_closure(|x| *x = x.reverse_bits()),
         };
 
         info!(
