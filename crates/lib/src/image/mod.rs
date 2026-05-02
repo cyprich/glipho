@@ -52,8 +52,8 @@ impl Image {
             },
             Layer::Invert => self.apply_closure(|x| *x = 255 - *x),
             Layer::ReverseBits => self.apply_closure(|x| *x = x.reverse_bits()),
-            Layer::Min(val) => self.apply_closure(|x| *x = min(*x, *val)),
-            Layer::Max(val) => self.apply_closure(|x| *x = max(*x, *val)),
+            Layer::Min(val) => self.apply_closure(|x| *x = max(*x, *val)),
+            Layer::Max(val) => self.apply_closure(|x| *x = min(*x, *val)),
         };
 
         info!(
