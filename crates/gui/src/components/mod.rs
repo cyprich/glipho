@@ -2,5 +2,12 @@
 //! They can be used to defined common UI elements like buttons, forms, and modals. In this template, we define a Hero
 //! component  to be used in our app.
 
+mod footer;
+mod header;
 mod hero;
+mod main;
+
+pub use footer::Footer;
+pub use header::Header;
 pub use hero::Hero;
+pub use main::Main;

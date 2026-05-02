@@ -1,22 +1,34 @@
 use std::{
     cmp::{max, min},
     fs,
+    io::Cursor,
     time::Instant,
 };
 
 use anyhow::{Context, Result};
+use base64::{Engine, engine::general_purpose};
 use image::{DynamicImage, ImageReader, Rgb, buffer::Pixels, buffer::PixelsMut};
 use log::{error, info};
 
 use crate::{Layer, Step, Steps};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Image {
     img: DynamicImage,
     save_subfolder: String,
 }
 
 impl Image {
+    pub fn base64(&self) -> String {
+        let mut buf = Vec::new();
+        self.img
+            .write_to(&mut Cursor::new(&mut buf), image::ImageFormat::Png)
+            .unwrap();
+        let base64 = general_purpose::STANDARD.encode(buf);
+
+        format!("data:image/png;base64,{}", base64)
+    }
+
     pub fn from_file(path: &str) -> Result<Self> {
         let time = Instant::now();
         let img = ImageReader::open(path).context("Failed to load image")?;

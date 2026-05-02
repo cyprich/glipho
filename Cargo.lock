@@ -2487,6 +2487,7 @@ name = "gui"
 version = "0.1.0"
 dependencies = [
  "dioxus",
+ "lib",
 ]
 
 [[package]]
@@ -3130,6 +3131,7 @@ name = "lib"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "base64",
  "image 0.25.10",
  "log",
  "rayon",

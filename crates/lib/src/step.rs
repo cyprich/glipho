@@ -3,7 +3,7 @@ use std::{fmt::Display, fs};
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum Step {
     Layer(crate::Layer),
     Save(String),
@@ -20,7 +20,7 @@ impl Display for Step {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
 pub struct Steps {
     pub steps: Vec<Step>,
 }
