@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use std::fmt::Display;
+use std::{fmt::Display, fs};
 
 use serde::{Deserialize, Serialize};
 
@@ -38,13 +38,20 @@ impl Steps {
         self.steps.remove(index);
     }
 
-    pub fn to_toml(&self) -> Result<String> {
+    pub fn to_toml_string(&self) -> Result<String> {
         let result = toml::to_string(self).context("Failed to serialize Steps")?;
         Ok(result)
     }
 
-    pub fn from_toml(string: &str) -> Result<Self> {
+    pub fn from_toml_string(string: &str) -> Result<Self> {
         let result: Self = toml::from_str(string)?;
         Ok(result)
     }
+
+    pub fn from_file(path: &str) -> Result<Self> {
+        let text = fs::read_to_string(path).context(format!("Failed to read file {}", path))?;
+        Self::from_toml_string(&text)
+    }
+
+    // TODO try load from file
 }

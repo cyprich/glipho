@@ -1,6 +1,8 @@
+use std::fs;
+
 use ::clap::Parser;
-use anyhow::{Context, Result};
-use lib::{Image, Layer};
+use anyhow::{Context, Error, Result};
+use lib::{Image, Layer, Steps};
 
 use crate::clap::Cli;
 
@@ -12,33 +14,40 @@ fn main() -> Result<()> {
     simple_logger::init().context("Failed to initialize Simple Logger")?;
 
     let cli = Cli::parse();
-    if let Some(val) = &cli.interactive
-        && *val
+    dbg!(&cli);
+
+    let steps = match &cli.steps_file {
+        Some(val) => {
+            let text = fs::read_to_string(val);
+            match text {
+                Ok(val) => Steps::from_toml_string(&val).ok(),
+                Err(val) => {
+                    eprintln!("Failed to load file {}", val);
+                    None
+                }
+            }
+        }
+        None => None,
+    };
+
+    if let Some(interactive) = cli.interactive
+        && interactive
     {
-        crate::interactive::run()?;
-        return Ok(());
+        crate::interactive::run(steps)?;
     } else {
-        println!("noninteractive");
+        if cli.steps_file.is_none() || cli.image_file.is_none() {
+            eprintln!(
+                "You have to specify image file and steps file when running non-interactively"
+            );
+            return Err(Error::msg("Invalid input arguments"));
+        }
+
+        let mut image =
+            Image::from_file(&cli.image_file.unwrap()).context("Failed to load file")?;
+        let steps = Steps::from_file(&cli.steps_file.unwrap()).context("Failed to load steps")?;
+
+        image.steps(&steps);
     }
-
-    // load image
-    let img = Image::from_file("sample.jpg")?;
-
-    img.clone()
-        .layer(&Layer::WrapBrightness(-20))
-        .save("step1.jpg")?
-        .layer(&Layer::Invert)
-        .save("step2.jpg")?;
-
-    img.clone().layer(&Layer::ReverseBits).save("pokus.jpg")?;
-
-    // img.clone()
-    //     .layer(&Layer::Brightness(-50))
-    //     .save("bright.jpg")?;
-
-    // img.clone()
-    //     .layer(&Layer::WrapBrightness(-50))
-    //     .save("wrap.jpg")?;
 
     Ok(())
 }

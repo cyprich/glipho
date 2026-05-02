@@ -4,7 +4,7 @@ use anyhow::{Context, Result};
 use image::{DynamicImage, ImageReader, Rgb, buffer::PixelsMut};
 use log::info;
 
-use crate::Layer;
+use crate::{Layer, Step, Steps};
 
 #[derive(Debug, Clone)]
 pub struct Image {
@@ -70,6 +70,26 @@ impl Image {
             layers.len(),
             time.elapsed().as_secs_f32()
         );
+        self
+    }
+
+    pub fn step(&mut self, step: &Step) -> &mut Self {
+        match step {
+            Step::Layer(layer) => self.layer(layer),
+            Step::Save(filename) => {
+                if let Err(val) = self.save(filename) {
+                    eprintln!("Failed to save image: {}", val);
+                }
+                self
+            }
+        }
+    }
+
+    pub fn steps(&mut self, steps: &Steps) -> &mut Self {
+        for step in &steps.steps {
+            self.step(step);
+        }
+
         self
     }
 

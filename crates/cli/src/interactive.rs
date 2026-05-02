@@ -4,11 +4,11 @@ use anyhow::{Context, Error, Result};
 use dialoguer::{Confirm, Input, Select, theme::ColorfulTheme};
 use lib::{Image, Layer, Step, Steps};
 
-pub fn run() -> Result<()> {
+pub fn run(steps: Option<Steps>) -> Result<()> {
     println!("Welcome to Rusty Fotos!");
 
     let mut image: Option<Image> = None;
-    let mut steps = Steps::default();
+    let mut steps = steps.unwrap_or_default();
     let mut unsaved_changes = false;
 
     let theme = ColorfulTheme::default();
@@ -139,7 +139,7 @@ fn save_steps(steps: &Steps) -> Result<()> {
         .context("Failed to input filename")?;
     let filename = format!("{}.toml", filename);
 
-    let val = steps.to_toml()?;
+    let val = steps.to_toml_string()?;
 
     fs::write(filename, val).context("Failed to save")?;
 
@@ -151,8 +151,7 @@ fn load_steps() -> Result<Steps> {
         .with_prompt("Enter filename (.toml extension will be added automatically)")
         .interact()?;
     let filename = format!("{}.toml", filename);
-    let string = fs::read_to_string(filename).context("Failed to read file")?;
-    let result = Steps::from_toml(&string).context("Failed to deserialize")?;
+    let result = Steps::from_file(&filename)?;
     Ok(result)
 }
 
