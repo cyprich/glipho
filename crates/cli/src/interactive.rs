@@ -3,12 +3,10 @@ use std::fs;
 use anyhow::{Context, Error, Result};
 use dialoguer::{Confirm, Input, Select, theme::ColorfulTheme};
 use lib::{Image, Layer, Step, Steps};
-use log::warn;
+use log::{error, warn};
 
-pub fn run(steps: Option<Steps>) -> Result<()> {
-    println!("Welcome to Rusty Fotos!");
-
-    let mut image: Option<Image> = None;
+pub fn run(steps: Option<Steps>, image: Option<Image>) -> Result<()> {
+    let mut image = image;
     let mut steps = steps.unwrap_or_default();
     let mut unsaved_changes = false;
 
@@ -33,11 +31,11 @@ pub fn run(steps: Option<Steps>) -> Result<()> {
 
     loop {
         println!();
-        match root_selection.clone().interact().unwrap() {
+        match root_selection.clone().interact()? {
             0 => match load_image() {
                 Ok(val) => image = Some(val),
                 Err(val) => {
-                    eprintln!("Failed to load image: {}", val);
+                    error!("Failed to load image: {}", val);
                     continue;
                 }
             },
@@ -58,7 +56,7 @@ pub fn run(steps: Option<Steps>) -> Result<()> {
                     steps.push(val);
                 }
                 Err(val) => {
-                    eprintln!("Failed to add step: {}", val)
+                    error!("Failed to add step: {}", val)
                 }
             },
             3 => match remove_step(&steps) {
@@ -67,13 +65,13 @@ pub fn run(steps: Option<Steps>) -> Result<()> {
                     steps.remove(val);
                 }
                 Err(val) => {
-                    eprintln!("Failed to remove step: {}", val);
+                    error!("Failed to remove step: {}", val);
                     continue;
                 }
             },
             4 => {
                 if let Err(val) = save_steps(&steps) {
-                    eprintln!("Failed to save steps: {}", val)
+                    error!("Failed to save steps: {}", val)
                 } else {
                     unsaved_changes = false;
                 }
@@ -82,30 +80,19 @@ pub fn run(steps: Option<Steps>) -> Result<()> {
                 match load_steps() {
                     Ok(val) => steps = val,
                     Err(val) => {
-                        eprintln!("{}", val);
+                        error!("{}", val);
                         continue;
                     }
                 }
                 unsaved_changes = false;
             }
-            6 => match image.clone() {
-                Some(mut image) => {
-                    if !steps.is_saved() {
-                        warn!("Some steps might not be saved");
-                    }
-                    for s in &steps.steps {
-                        match s {
-                            Step::Layer(layer) => {
-                                image.layer(layer);
-                            }
-                            Step::Save(filename) => {
-                                image.save(filename)?;
-                            }
-                        }
-                    }
+            6 => {
+                if let Some(image) = image.as_mut() {
+                    image.steps(&steps);
+                } else {
+                    error!("No image to apply steps to");
                 }
-                None => eprintln!("No image to apply steps to"),
-            },
+            }
             7 => {
                 if unsaved_changes {
                     if unsaved_confirmation
@@ -119,7 +106,7 @@ pub fn run(steps: Option<Steps>) -> Result<()> {
                     return Ok(());
                 }
             }
-            _ => println!("Hey, this is not supposed to happen!"),
+            _ => warn!("Hey, this is not supposed to happen!"),
         }
     }
 }

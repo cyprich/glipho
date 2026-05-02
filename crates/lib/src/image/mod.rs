@@ -5,7 +5,7 @@ use std::{
 
 use anyhow::{Context, Result};
 use image::{DynamicImage, ImageReader, Rgb, buffer::Pixels, buffer::PixelsMut};
-use log::info;
+use log::{error, info};
 
 use crate::{Layer, Step, Steps};
 
@@ -52,8 +52,8 @@ impl Image {
             },
             Layer::Invert => self.apply_closure(|x| *x = 255 - *x),
             Layer::ReverseBits => self.apply_closure(|x| *x = x.reverse_bits()),
-            Layer::Min(val) => self.apply_closure(|x| *x = max(*x, *val)),
-            Layer::Max(val) => self.apply_closure(|x| *x = min(*x, *val)),
+            Layer::Min(val) => self.apply_closure(|x| *x = min(*x, *val)),
+            Layer::Max(val) => self.apply_closure(|x| *x = max(*x, *val)),
         };
 
         info!(
@@ -83,7 +83,7 @@ impl Image {
             Step::Layer(layer) => self.layer(layer),
             Step::Save(filename) => {
                 if let Err(val) = self.save(filename) {
-                    eprintln!("Failed to save image: {}", val);
+                    error!("Failed to save image: {}", val);
                 }
                 self
             }
