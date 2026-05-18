@@ -1,10 +1,12 @@
-# Rusty Fotos
+# glipho
+
+Software to create **gli**tchy **pho**tos
 
 Table of contents
 
 <!--toc:start-->
 
-- [Rusty Fotos](#rusty-fotos)
+- [glipho](#glipho)
   - [About](#about)
     - [Steps](#steps)
       - [Layer](#layer)
@@ -12,8 +14,7 @@ Table of contents
   - [Usage](#usage)
     - [CLI](#cli)
     - [GUI](#gui)
-
-<!--toc:end-->
+    <!--toc:end-->
 
 ## About
 
