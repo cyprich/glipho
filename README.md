@@ -77,15 +77,11 @@ If you are running it via cargo, you can specify the parameters like this: `carg
 
 ### GUI
 
-We have GUI version via [Dioxus](https://dioxuslabs.com/)!
+We have GUI version via [Slint](https://slint.dev/)!
 
 Just download the version for your operating system from the [Releases page](https://github.com/cyprich/glipho/releases)
 
 You can compile and run it manually with `cargo run --bin gui`
-
-You can also install [Dioxus CLI](https://crates.io/crates/dioxus-cli) with `cargo install dioxus-cli`  
-Verify via `dx --version`  
-Then you should also be able to run `dx serve` (desktop app) or `dx serve --platform web` (web app) and more...
 
 ## TODOs and Future plans
 

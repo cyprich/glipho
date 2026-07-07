@@ -1,27 +1,13 @@
-use dioxus::prelude::*;
+use anyhow::Context;
+use slint::ComponentHandle;
 
-use crate::{components::Header, pages::Home};
+mod ui;
 
-mod components;
-mod pages;
+fn main() -> anyhow::Result<()> {
+    ui::App::new()
+        .context("Failed to initiate new App")?
+        .run()
+        .context("Failed to run App")?;
 
-const FAVICON: Asset = asset!("/assets/favicon.ico");
-const MAIN_CSS: Asset = asset!("/assets/main.css");
-const TAILWIND_CSS: Asset = asset!("/assets/tailwind.css");
-
-fn main() {
-    dioxus::launch(App);
-}
-
-#[component]
-fn App() -> Element {
-    rsx! {
-        document::Link { rel: "icon", href: FAVICON }
-        document::Link { rel: "stylesheet", href: MAIN_CSS } document::Link { rel: "stylesheet", href: TAILWIND_CSS }
-
-        div {
-            Header {}
-            Home {}
-        }
-    }
+    Ok(())
 }
