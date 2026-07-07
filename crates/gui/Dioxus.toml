@@ -1,4 +1,5 @@
 [application]
+hot_reload = true
 
 [web.app]
 

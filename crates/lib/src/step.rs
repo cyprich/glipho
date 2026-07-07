@@ -12,11 +12,21 @@ pub enum Step {
 impl Display for Step {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let result = match self {
-            Step::Layer(val) => format!("Layer {}", val),
-            Step::Save(val) => format!("Save  {}", val),
+            Step::Layer(val) => val.to_string(),
+            Step::Save(val) => val.to_string(),
         };
 
         write!(f, "{}", result)
+    }
+}
+
+impl Step {
+    pub fn to_type_string(&self) -> String {
+        match &self {
+            Step::Layer(_) => "Layer",
+            Step::Save(_) => "Save",
+        }
+        .into()
     }
 }
 
