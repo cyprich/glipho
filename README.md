@@ -33,7 +33,7 @@ In this table, you can see all currently supported layer types
 By combining these steps, you can achieve cool effects, for example...
 
 1. `Max(150)`
-2. `Max(50)`
+2. `Min(50)`
 3. `Invert`
 4. `ReverseBits`
 5. `WrapBrightness(-30)`
