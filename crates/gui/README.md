@@ -1,16 +1,12 @@
 # Development
 
-Your new jumpstart project includes basic organization with an organized `assets` folder and a `components` folder.
-If you chose to develop with the router feature, you will also have a `views` folder.
+Your new bare-bones project includes minimal organization with a single `main.rs` file and a few assets.
 
 ```
 project/
 ├─ assets/ # Any assets that are used by the app should be placed here
 ├─ src/
-│  ├─ main.rs # The entrypoint for the app.
-│  ├─ components/
-│  │  ├─ mod.rs # Defines the components module
-│  │  ├─ hero.rs # The Hero component for use in the home page
+│  ├─ main.rs # main.rs is the entry point to your application and currently contains all components for the app
 ├─ Cargo.toml # The Cargo.toml file defines the dependencies and feature flags for your project
 ```
 
@@ -23,13 +19,14 @@ Automatic tailwind is supported by checking for a file called `tailwind.css` in 
 ```toml
 [application]
 tailwind_input = "my.css"
-tailwind_output = "assets/out.css"
+tailwind_output = "assets/out.css" # also customize the location of the out file!
 ```
 
 ### Tailwind Manual Install
 
 To use tailwind plugins or manually customize tailwind, you can can install the Tailwind CLI and use it directly.
 
+### Tailwind
 1. Install npm: https://docs.npmjs.com/downloading-and-installing-node-js-and-npm
 2. Install the Tailwind CSS CLI: https://tailwindcss.com/docs/installation/tailwind-cli
 3. Run the following command in the root of the project to start the Tailwind CSS compiler:
