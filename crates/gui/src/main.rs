@@ -8,6 +8,7 @@ fn main() -> anyhow::Result<()> {
     let ui_handle = ui.as_weak();
 
     {
+        // increase
         let ui_handle = ui_handle.clone();
         ui.on_increase(move || {
             let ui = ui_handle.unwrap();
@@ -15,6 +16,7 @@ fn main() -> anyhow::Result<()> {
         });
     }
     {
+        // decrease
         let ui_handle = ui_handle.clone();
         ui.on_decrease(move || {
             let ui = ui_handle.unwrap();
@@ -22,10 +24,19 @@ fn main() -> anyhow::Result<()> {
         });
     }
     {
+        // reset
         let ui_handle = ui_handle.clone();
         ui.on_reset(move || {
             let ui = ui_handle.unwrap();
             ui.set_counter(0);
+        });
+    }
+    {
+        // change text value
+        let ui_handle = ui_handle.clone();
+        ui.on_change_textvalue(move || {
+            let ui = ui_handle.unwrap();
+            ui.set_textvalue(ui.get_textinput());
         });
     }
 

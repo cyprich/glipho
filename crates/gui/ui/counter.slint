@@ -1,4 +1,4 @@
-import { Button } from "std-widgets.slint";
+import { Button, LineEdit } from "std-widgets.slint";
 export component Counter inherits Window {
     title: "glipho";
 
@@ -7,7 +7,15 @@ export component Counter inherits Window {
     callback decrease();
     callback reset();
 
+    in-out property <string> textvalue;
+    callback change_textvalue();
+
+    in-out property <string> textinput;
+
     VerticalLayout {
+        padding: 8px;
+        spacing: 8px;
+
         Text {
             text: "The counter is currently set to \{root.counter}";
         }
@@ -30,6 +38,33 @@ export component Counter inherits Window {
             text: "Reset";
             clicked => {
                 root.reset();
+            }
+        }
+
+        // editing text
+        Text {
+            text: "Current text: \{root.textvalue}";
+            font-size: 24px;
+        }
+
+        Text {
+            text: "Input value: \{root.textinput}";
+        }
+
+        HorizontalLayout {
+
+            LineEdit {
+                placeholder-text: "Edit the value";
+                edited(text) => {
+                    root.textinput = text;
+                }
+            }
+
+            Button {
+                text: "Change";
+                clicked => {
+                    root.change_textvalue();
+                }
             }
         }
     }
