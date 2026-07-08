@@ -1,0 +1,36 @@
+import { Button } from "std-widgets.slint";
+export component Counter inherits Window {
+    title: "glipho";
+
+    in-out property <int> counter;
+    callback increase();
+    callback decrease();
+    callback reset();
+
+    VerticalLayout {
+        Text {
+            text: "The counter is currently set to \{root.counter}";
+        }
+
+        Button {
+            text: "+";
+            clicked => {
+                root.increase();
+            }
+        }
+
+        Button {
+            text: "-";
+            clicked => {
+                root.decrease();
+            }
+        }
+
+        Button {
+            text: "Reset";
+            clicked => {
+                root.reset();
+            }
+        }
+    }
+}

@@ -1,0 +1,44 @@
+import { Button } from "std-widgets.slint";
+export component App inherits Window {
+    width: 1200px;
+    height: 800px;
+    title: "glipho";
+
+    in-out property <int> counter;
+    callback increase();
+
+    GridLayout {
+        padding: 16px;
+        spacing: 8px;
+
+        Row {
+            Text {
+                text: "The counter is currently set to \{root.counter}";
+            }
+
+            Button {
+                text: "+";
+                clicked => {
+                    root.increase();
+                }
+            }
+        }
+
+        Row {
+            Text {
+                text: "hello world";
+                height: 24px;
+            }
+        }
+
+        Row {
+            Text {
+                text: "Steps";
+            }
+
+            Text {
+                text: "Image preview";
+            }
+        }
+    }
+}
