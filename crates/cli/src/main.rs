@@ -24,7 +24,7 @@ fn main() -> Result<()> {
         None => None,
     };
     let image = match &cli.image_file {
-        Some(val) => Some(Image::from_file(val).context("Failed to load file")?),
+        Some(val) => Some(Image::open(val).context("Failed to load file")?),
         None => None,
     };
 

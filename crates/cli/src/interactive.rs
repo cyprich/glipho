@@ -152,7 +152,7 @@ fn load_image() -> Result<Image> {
         .interact()
         .context("Failed to input filename")?;
 
-    Image::from_file(&filename)
+    Image::open(&filename)
 }
 
 fn add_step() -> Result<Step> {

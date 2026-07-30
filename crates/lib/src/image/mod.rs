@@ -1,55 +1,99 @@
 use std::{
     cmp::{max, min},
     fs,
-    io::Cursor,
+    path::{Path, PathBuf},
     time::Instant,
 };
 
 use anyhow::{Context, Result};
-use base64::{Engine, engine::general_purpose};
-use image::{DynamicImage, ImageReader, Rgb, buffer::Pixels, buffer::PixelsMut};
+use image::{RgbImage, RgbaImage};
 use log::{error, info};
 
 use crate::{Layer, Step, Steps};
 
 #[derive(Debug, Clone, PartialEq)]
+enum ImageFormat {
+    Jpg,
+    Png,
+    Other,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct Image {
-    img: DynamicImage,
-    save_subfolder: String,
+    width: u32,
+    height: u32,
+    pixels: Vec<u8>, // RGBA8 = R, G, B, A, R, G, B, A, ...
+    path: PathBuf,
+    format: ImageFormat,
 }
 
 impl Image {
-    pub fn base64(&self) -> String {
-        let mut buf = Vec::new();
-        self.img
-            .write_to(&mut Cursor::new(&mut buf), image::ImageFormat::Png)
-            .unwrap();
-        let base64 = general_purpose::STANDARD.encode(buf);
-
-        format!("data:image/png;base64,{}", base64)
-    }
-
-    pub fn from_file(path: &str) -> Result<Self> {
+    pub fn open(path: impl AsRef<Path>) -> Result<Self> {
+        let path = path.as_ref();
         let time = Instant::now();
-        let img = ImageReader::open(path).context("Failed to load image")?;
-        let img = img.decode().context("Failed to decode image")?;
 
-        info!("Loaded '{}' in {}s", path, time.elapsed().as_secs_f32());
+        let img = image::open(path)
+            .context("Failed to load image")?
+            .into_rgba8();
 
-        let save_subfolder = String::from("exports");
+        info!(
+            "Loaded '{}' in {}s",
+            path.to_str().unwrap_or("image"),
+            time.elapsed().as_secs_f32()
+        );
+
+        let format = if let Some(val) = path.to_string_lossy().rsplit('.').next() {
+            match val.to_lowercase().as_str() {
+                "jpg" | "jpeg" => ImageFormat::Jpg,
+                "png" => ImageFormat::Png,
+                _ => ImageFormat::Other,
+            }
+        } else {
+            ImageFormat::Other
+        };
 
         Ok(Self {
-            img,
-            save_subfolder,
+            width: img.width(),
+            height: img.height(),
+            pixels: img.into_raw(),
+            path: path.into(),
+            format,
         })
     }
 
-    pub fn save(&mut self, path: &str) -> Result<&mut Self> {
+    pub fn save(&self, path: impl AsRef<Path>, overwrite: bool) -> Result<&Self> {
         let time = Instant::now();
-        let path = format!("{}/{}", self.save_subfolder, path);
-        let _ = fs::remove_file(&path);
-        self.img.save(&path)?;
-        info!("Saved '{}' in {}s", path, time.elapsed().as_secs_f32());
+
+        // TODO: remove the exports?
+        if overwrite && fs::exists(&path).unwrap_or(false) {
+            fs::remove_file(&path).context("Failed to remove old image")?;
+        }
+
+        match self.format {
+            ImageFormat::Jpg => {
+                let mut pixels = Vec::with_capacity((self.width * self.height * 3) as usize);
+                self.pixels.chunks_exact(4).for_each(|p| {
+                    pixels.push(p[0]);
+                    pixels.push(p[1]);
+                    pixels.push(p[2]);
+                });
+
+                let img = RgbImage::from_raw(self.width, self.height, pixels)
+                    .context("Failed to construct RGB Image")?;
+                img.save(&path).context("Failed to save an Image")?;
+            }
+            _ => {
+                let img = RgbaImage::from_raw(self.width, self.height, self.pixels.clone())
+                    .context("Failed to construct RGBA Image")?;
+                img.save(&path).context("Failed to save an Image")?;
+            }
+        }
+
+        info!(
+            "Saved '{}' in {}s",
+            path.as_ref().to_str().unwrap_or("image"),
+            time.elapsed().as_secs_f32()
+        );
 
         Ok(self)
     }
@@ -97,7 +141,7 @@ impl Image {
         match step {
             Step::Layer(layer) => self.layer(layer),
             Step::Save(filename) => {
-                if let Err(val) = self.save(filename) {
+                if let Err(val) = self.save(filename, true) {
                     error!("Failed to save image: {}", val);
                 }
                 self
@@ -114,29 +158,14 @@ impl Image {
         result
     }
 
-    pub fn pixels(&self) -> Option<Pixels<'_, Rgb<u8>>> {
-        self.img.as_rgb8().map(|x| x.pixels())
-    }
-
-    pub fn pixels_mut(&mut self) -> Option<PixelsMut<'_, Rgb<u8>>> {
-        self.img.as_mut_rgb8().map(|x| x.pixels_mut())
-    }
-
-    pub fn pokus(&mut self) -> &mut Self {
-        self.apply_closure(|x| *x = x.saturating_sub(50));
-        self
-    }
-
     pub(crate) fn apply_closure<F>(&mut self, mut f: F) -> &mut Self
     where
         F: FnMut(&mut u8),
     {
-        if let Some(pixels) = self.pixels_mut() {
-            for p in pixels {
-                f(&mut p[0]);
-                f(&mut p[1]);
-                f(&mut p[2]);
-            }
+        for p in self.pixels.chunks_exact_mut(4) {
+            f(&mut p[0]);
+            f(&mut p[1]);
+            f(&mut p[2]);
         }
 
         self
