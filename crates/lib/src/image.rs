@@ -7,9 +7,9 @@ use std::{
 
 use anyhow::{Context, Result};
 use image::{RgbImage, RgbaImage};
-use log::{error, info};
+use log::info;
 
-use crate::{Layer, Step, Steps};
+use crate::{Effect, Effects};
 
 #[derive(Debug, Clone, PartialEq)]
 enum ImageFormat {
@@ -98,21 +98,21 @@ impl Image {
         Ok(self)
     }
 
-    pub fn layer(&mut self, layer: &Layer) -> &mut Self {
+    pub fn effect(&mut self, layer: &Effect) -> &mut Self {
         let time = Instant::now();
         let result = match layer {
-            Layer::Brightness(val) => match val >= &0i16 {
+            Effect::Brightness(val) => match val >= &0i16 {
                 true => self.apply_closure(|x| *x = x.saturating_add(*val as u8)),
                 false => self.apply_closure(|x| *x = x.saturating_sub(*val as u8)),
             },
-            Layer::WrapBrightness(val) => match val >= &0i16 {
+            Effect::WrapBrightness(val) => match val >= &0i16 {
                 true => self.apply_closure(|x| *x = x.wrapping_add(*val as u8)),
                 false => self.apply_closure(|x| *x = x.wrapping_sub(*val as u8)),
             },
-            Layer::Invert => self.apply_closure(|x| *x = 255 - *x),
-            Layer::ReverseBits => self.apply_closure(|x| *x = x.reverse_bits()),
-            Layer::Min(val) => self.apply_closure(|x| *x = max(*x, *val)),
-            Layer::Max(val) => self.apply_closure(|x| *x = min(*x, *val)),
+            Effect::Invert => self.apply_closure(|x| *x = 255 - *x),
+            Effect::ReverseBits => self.apply_closure(|x| *x = x.reverse_bits()),
+            Effect::Min(val) => self.apply_closure(|x| *x = max(*x, *val)),
+            Effect::Max(val) => self.apply_closure(|x| *x = min(*x, *val)),
         };
 
         info!(
@@ -124,38 +124,17 @@ impl Image {
         result
     }
 
-    pub fn layers(&mut self, layers: &[Layer]) -> &mut Self {
+    pub fn effects(&mut self, effects: &Effects) -> &mut Self {
         let time = Instant::now();
-        for l in layers {
-            self.layer(l);
+        for l in &effects.inner {
+            self.effect(l);
         }
         info!(
             "Applied {} layers in {}s",
-            layers.len(),
+            &effects.inner.len(),
             time.elapsed().as_secs_f32()
         );
         self
-    }
-
-    pub fn step(&mut self, step: &Step) -> &mut Self {
-        match step {
-            Step::Layer(layer) => self.layer(layer),
-            Step::Save(filename) => {
-                if let Err(val) = self.save(filename, true) {
-                    error!("Failed to save image: {}", val);
-                }
-                self
-            }
-        }
-    }
-
-    pub fn steps(&mut self, steps: &Steps) -> &mut Self {
-        let mut result = self;
-        for step in &steps.steps {
-            result = result.step(step);
-        }
-
-        result
     }
 
     pub(crate) fn apply_closure<F>(&mut self, mut f: F) -> &mut Self

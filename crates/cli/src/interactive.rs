@@ -1,25 +1,24 @@
-use std::fs;
-
 use anyhow::{Context, Error, Result};
 use dialoguer::{Confirm, Input, Select, theme::ColorfulTheme};
-use lib::{Image, Layer, Step, Steps};
+use lib::{Effect, Effects, Image};
 use log::{error, warn};
 
-pub fn run(steps: Option<Steps>, image: Option<Image>) -> Result<()> {
-    let mut image = image;
-    let mut steps = steps.unwrap_or_default();
+pub fn run(effects: Option<Effects>, image: Option<Image>) -> Result<()> {
+    let mut original_image = image;
+
+    let mut effects = effects.unwrap_or_default();
     let mut unsaved_changes = false;
 
     let theme = ColorfulTheme::default();
 
     let root_items = vec![
         "Load/Change Image",
-        "View Steps",
-        "Add Step",
-        "Remove Step",
-        "Save Steps to file",
-        "Load Steps from file",
-        "Apply Steps",
+        "View Effects",
+        "Add Effect",
+        "Remove Effect",
+        "Save Effects to file",
+        "Load Effects from file",
+        "Apply Effects",
         "Exit",
     ];
     let root_selection = Select::with_theme(&theme)
@@ -31,54 +30,61 @@ pub fn run(steps: Option<Steps>, image: Option<Image>) -> Result<()> {
 
     loop {
         println!();
+        // choose action
         match root_selection.clone().interact()? {
+            // load/change image
             0 => match load_image() {
-                Ok(val) => image = Some(val),
+                Ok(val) => original_image = Some(val),
                 Err(val) => {
                     error!("Failed to load image: {}", val);
                     continue;
                 }
             },
+            // view effects
             1 => {
-                if steps.steps.is_empty() {
-                    println!("There are no steps");
+                if effects.inner.is_empty() {
+                    println!("There are no effects");
                 } else {
-                    steps
-                        .steps
+                    effects
+                        .inner
                         .iter()
                         .enumerate()
-                        .for_each(|(index, step)| println!("  {}. {}", index + 1, step));
+                        .for_each(|(index, effect)| println!("  {}. {}", index + 1, effect));
                 }
             }
-            2 => match add_step() {
+            // add effect
+            2 => match add_effect() {
                 Ok(val) => {
                     unsaved_changes = true;
-                    steps.push(val);
+                    effects.inner.push(val);
                 }
                 Err(val) => {
-                    error!("Failed to add step: {}", val)
+                    error!("Failed to add effect: {}", val)
                 }
             },
-            3 => match remove_step(&steps) {
+            // remove effect
+            3 => match remove_effect(&effects) {
                 Ok(val) => {
                     unsaved_changes = true;
-                    steps.remove(val);
+                    effects.inner.remove(val);
                 }
                 Err(val) => {
-                    error!("Failed to remove step: {}", val);
+                    error!("Failed to remove effect: {}", val);
                     continue;
                 }
             },
+            // save effects to file
             4 => {
-                if let Err(val) = save_steps(&steps) {
-                    error!("Failed to save steps: {}", val)
+                if let Err(val) = save_effects(&effects) {
+                    error!("Failed to save effects: {}", val)
                 } else {
                     unsaved_changes = false;
                 }
             }
+            // load effects from file
             5 => {
-                match load_steps() {
-                    Ok(val) => steps = val,
+                match load_effects() {
+                    Ok(val) => effects = val,
                     Err(val) => {
                         error!("{}", val);
                         continue;
@@ -86,13 +92,16 @@ pub fn run(steps: Option<Steps>, image: Option<Image>) -> Result<()> {
                 }
                 unsaved_changes = false;
             }
+            // apply effects
             6 => {
-                if let Some(image) = image.as_mut() {
-                    image.steps(&steps);
+                let mut working_image = original_image.clone();
+                if let Some(image) = working_image.as_mut() {
+                    image.effects(&effects);
                 } else {
-                    error!("No image to apply steps to");
+                    error!("No image to apply effects to");
                 }
             }
+            // exit
             7 => {
                 if unsaved_changes {
                     if unsaved_confirmation
@@ -111,38 +120,34 @@ pub fn run(steps: Option<Steps>, image: Option<Image>) -> Result<()> {
     }
 }
 
-fn remove_step(steps: &Steps) -> Result<usize> {
-    if steps.steps.is_empty() {
-        Err(Error::msg("There are no steps"))
+fn remove_effect(effects: &Effects) -> Result<usize> {
+    if effects.inner.is_empty() {
+        Err(Error::msg("There are no effects"))
     } else {
         Select::with_theme(&ColorfulTheme::default())
-            .with_prompt("Which step you want to remove?")
-            .items(steps.steps_string())
+            .with_prompt("Which effect you want to remove?")
+            .items(effects.inner.iter().map(|e| e.to_string()))
             .interact()
-            .context("Error with selecting step to remove")
+            .context("Error with selecting effect to remove")
     }
 }
 
-fn save_steps(steps: &Steps) -> Result<()> {
-    let filename = Input::<String>::new()
-        .with_prompt("Enter filename (.toml extension will be added automatically)")
+fn save_effects(effects: &Effects) -> Result<()> {
+    let path = Input::<String>::new()
+        .with_prompt("Enter path")
         .interact()
         .context("Failed to input filename")?;
-    let filename = format!("{}.toml", filename);
 
-    let val = steps.to_toml_string()?;
-
-    fs::write(filename, val).context("Failed to save")?;
+    effects.save(path)?;
 
     Ok(())
 }
 
-fn load_steps() -> Result<Steps> {
-    let filename = Input::<String>::with_theme(&ColorfulTheme::default())
-        .with_prompt("Enter filename (.toml extension will be added automatically)")
+fn load_effects() -> Result<Effects> {
+    let path = Input::<String>::with_theme(&ColorfulTheme::default())
+        .with_prompt("Enter Image path")
         .interact()?;
-    let filename = format!("{}.toml", filename);
-    let result = Steps::from_file(&filename)?;
+    let result = Effects::load(&path)?;
     Ok(result)
 }
 
@@ -155,24 +160,7 @@ fn load_image() -> Result<Image> {
     Image::open(&filename)
 }
 
-fn add_step() -> Result<Step> {
-    let items = vec!["Layer", "Save"];
-    let selector = Select::with_theme(&ColorfulTheme::default())
-        .with_prompt("What type of Step do you want to add? (ESC to cancel)")
-        .items(&items)
-        .interact_opt()?;
-
-    match selector {
-        Some(val) => match val {
-            0 => Ok(Step::Layer(add_step_layer()?)),
-            1 => Ok(Step::Save(add_step_save()?)),
-            _ => Err(Error::msg("This was not supposed to happen...")),
-        },
-        None => Err(Error::msg("User cancelled")),
-    }
-}
-
-fn add_step_layer() -> Result<Layer> {
+fn add_effect() -> Result<Effect> {
     let items = vec![
         "Brightness",
         "Wrapped Brightness",
@@ -199,14 +187,14 @@ fn add_step_layer() -> Result<Layer> {
                     Err(Error::msg("Value out of range"))
                 } else {
                     match val {
-                        0 => Ok(Layer::Brightness(num)),
-                        1 => Ok(Layer::WrapBrightness(num)),
+                        0 => Ok(Effect::Brightness(num)),
+                        1 => Ok(Effect::WrapBrightness(num)),
                         _ => Err(Error::msg("This was not supposed to happen...")),
                     }
                 }
             }
-            2 => Ok(Layer::Invert),
-            3 => Ok(Layer::ReverseBits),
+            2 => Ok(Effect::Invert),
+            3 => Ok(Effect::ReverseBits),
             4 | 5 => {
                 let num = number_input
                     .with_prompt("Enter the amount (0 to 255)")
@@ -215,8 +203,8 @@ fn add_step_layer() -> Result<Layer> {
                     Err(Error::msg("Value out of range"))
                 } else {
                     match val {
-                        4 => Ok(Layer::Min(num as u8)),
-                        5 => Ok(Layer::Max(num as u8)),
+                        4 => Ok(Effect::Min(num as u8)),
+                        5 => Ok(Effect::Max(num as u8)),
                         _ => Err(Error::msg("This was not supposed to happen...")),
                     }
                 }
@@ -225,11 +213,4 @@ fn add_step_layer() -> Result<Layer> {
         },
         None => Err(Error::msg("User cancelled")),
     }
-}
-
-fn add_step_save() -> Result<String> {
-    let filename = Input::<String>::new()
-        .with_prompt("Enter filename")
-        .interact()?;
-    Ok(filename)
 }

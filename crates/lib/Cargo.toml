@@ -10,5 +10,6 @@ image = { version = "0.25.10" }
 log = "0.4.29"
 rayon = "1.12.0"
 serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.151"
 simple_logger = "5.2.0"
 toml = "1.1.2"

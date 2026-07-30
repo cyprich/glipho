@@ -2,7 +2,7 @@ use std::time::Instant;
 
 use ::clap::Parser;
 use anyhow::{Context, Error, Result};
-use lib::{Image, Steps};
+use lib::{Effects, Image};
 use log::{error, info};
 
 // use plotters::prelude::*;
@@ -19,8 +19,8 @@ fn main() -> Result<()> {
 
     // get filenames from arguments
     let cli = Cli::parse();
-    let steps = match &cli.steps_file {
-        Some(val) => Some(Steps::from_file(val).context("Failed to load steps")?),
+    let effects = match &cli.effects_file {
+        Some(val) => Some(Effects::load(val).context("Failed to load steps")?),
         None => None,
     };
     let image = match &cli.image_file {
@@ -32,15 +32,16 @@ fn main() -> Result<()> {
     if let Some(interactive) = cli.interactive
         && interactive
     {
-        crate::interactive::run(steps, image)?;
+        crate::interactive::run(effects, image)?;
     } else {
-        if steps.is_none() || image.is_none() {
+        if effects.is_none() || image.is_none() {
             error!("You have to specify image file and steps file when running non-interactively");
             return Err(Error::msg("Invalid input arguments"));
         }
 
         // chart(&image, "before.png")?;
-        image.unwrap().steps(&steps.unwrap());
+        let effects = effects.unwrap();
+        image.unwrap().effects(&effects);
         // chart(&image, "after.png")?;
     }
 
