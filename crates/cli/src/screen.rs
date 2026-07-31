@@ -7,5 +7,7 @@ pub enum Screen {
     ViewEffects,
     AddEffect,
     DeleteEffects,
+    LoadEffects,
+    SaveEffects,
     Apply,
 }

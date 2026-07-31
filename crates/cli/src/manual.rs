@@ -1,9 +1,9 @@
-use std::{fmt::format, fs};
+use std::fs;
 
-use anyhow::{Context, Error, Result};
-use dialoguer::{Confirm, Input, MultiSelect, Select, theme::ColorfulTheme};
+use anyhow::Result;
+use dialoguer::{Input, MultiSelect, Select, theme::ColorfulTheme};
 use lib::{Effect, Effects, Image};
-use log::{error, info, warn};
+use log::warn;
 
 use crate::{action::Action, screen::Screen};
 
@@ -25,30 +25,40 @@ impl Manual {
     }
 
     pub fn run(mut self) -> Result<()> {
+        // TODO: optional interactions
         loop {
             let action = match self.screen {
                 Screen::Main => self.render_main(),
                 Screen::Image => self.render_image(),
-                Screen::ChangeInput => self.change_input_or_output(true),
-                Screen::ChangeOutput => self.change_input_or_output(false),
+                Screen::ChangeInput => self.change_input(),
+                Screen::ChangeOutput => self.change_output(),
                 Screen::Effects => self.render_effects(),
                 Screen::ViewEffects => self.view_effects(),
-                Screen::AddEffect => todo!(),
+                Screen::AddEffect => self.add_effect(),
                 Screen::DeleteEffects => self.delete_effects(),
-                Screen::Apply => todo!(),
+                Screen::LoadEffects => self.load_effects(),
+                Screen::SaveEffects => self.save_effects(),
+                Screen::Apply => self.apply(),
             }?;
 
             match (action, self.screen) {
+                // if change screen, just change it
                 (Action::Change(screen), _) => self.screen = screen,
+                // exit from main = quit program
                 (Action::Exit, Screen::Main) => break,
+                // exit from image submenu
                 (Action::Exit, Screen::Image) => self.screen = Screen::Main,
                 (Action::Exit, Screen::ChangeInput) => self.screen = Screen::Image,
                 (Action::Exit, Screen::ChangeOutput) => self.screen = Screen::Image,
+                // exit from effects submenu
                 (Action::Exit, Screen::Effects) => self.screen = Screen::Main,
                 (Action::Exit, Screen::ViewEffects) => self.screen = Screen::Effects,
                 (Action::Exit, Screen::AddEffect) => self.screen = Screen::Effects,
                 (Action::Exit, Screen::DeleteEffects) => self.screen = Screen::Effects,
-                (Action::Exit, Screen::Apply) => todo!(),
+                (Action::Exit, Screen::LoadEffects) => self.screen = Screen::Effects,
+                (Action::Exit, Screen::SaveEffects) => self.screen = Screen::Effects,
+                // exit from apply submenu
+                (Action::Exit, Screen::Apply) => self.screen = Screen::Main,
             }
         }
         Ok(())
@@ -134,6 +144,10 @@ impl Manual {
         if self.effects.is_some() {
             items.push("Delete effect".to_string());
         }
+        items.push("Load from file".to_string());
+        if self.effects.is_some() {
+            items.push("Save to file".to_string());
+        }
         items.push("Cancel".to_string());
 
         let selection = Select::with_theme(&ColorfulTheme::default())
@@ -145,37 +159,34 @@ impl Manual {
             (Some(_), 0) => Ok(Action::Change(Screen::ViewEffects)),
             (Some(_), 1) => Ok(Action::Change(Screen::AddEffect)),
             (Some(_), 2) => Ok(Action::Change(Screen::DeleteEffects)),
-            (Some(_), 3) => Ok(Action::Exit),
+            (Some(_), 3) => Ok(Action::Change(Screen::LoadEffects)),
+            (Some(_), 4) => Ok(Action::Change(Screen::SaveEffects)),
+            (Some(_), 5) => Ok(Action::Exit),
             (None, 0) => Ok(Action::Change(Screen::AddEffect)),
-            (None, 1) => Ok(Action::Exit),
+            (None, 1) => Ok(Action::Change(Screen::LoadEffects)),
+            (None, 2) => Ok(Action::Exit),
             (_, _) => Err(anyhow::Error::msg("Invalid selection index")),
         }
     }
 
-    fn change_input_or_output(&mut self, changing_input: bool) -> Result<Action> {
-        let path = Input::<String>::with_theme(&ColorfulTheme::default())
-            .with_prompt("Enter path")
-            .interact()?;
+    fn change_input(&mut self) -> Result<Action> {
+        let path = Self::file_path_input(false, true)?;
 
-        if changing_input {
-            match Image::open(&path) {
-                Ok(val) => self.input = Some(val),
-                Err(e) => {
-                    if !fs::exists(&path).unwrap_or(false) {
-                        error!("File '{}' does not exist", &path)
-                    } else {
-                        error!("Error opening file '{}': {}", &path, e)
-                    }
-                }
-            };
-        } else {
-            match fs::exists(&path) {
-                Err(e) => error!("Failed to read '{}': {}", &path, e),
-                Ok(true) => warn!("File '{}' already exists and will be overwritten", &path),
-                Ok(false) => (),
+        match Image::open(path) {
+            Ok(val) => self.input = Some(val),
+            Err(e) => {
+                warn!("Error opening image file: {}", e);
+                self.input = None;
             }
-            self.output = Some(path);
         }
+
+        Ok(Action::Exit)
+    }
+
+    fn change_output(&mut self) -> Result<Action> {
+        let path = Self::file_path_input(true, false)?;
+
+        self.output = Some(path);
 
         Ok(Action::Exit)
     }
@@ -206,6 +217,7 @@ impl Manual {
                 .items(items)
                 .interact()?;
 
+            // TODO: this does not work right - index updates
             for i in selection {
                 effects.inner.remove(i);
             }
@@ -213,5 +225,142 @@ impl Manual {
             println!("There are no effects")
         }
         Ok(Action::Exit)
+    }
+
+    fn add_effect(&mut self) -> Result<Action> {
+        let items = [
+            "Brightness",
+            "Wrap Brightness",
+            "Invert",
+            "ReverseBits",
+            "Min",
+            "Max",
+        ];
+
+        let selection = Select::with_theme(&ColorfulTheme::default())
+            .with_prompt("Add Effect")
+            .items(items)
+            .interact()?;
+
+        let effects = self.effects.get_or_insert_with(Effects::default);
+
+        match selection {
+            0 | 1 => {
+                let value = Self::number_input(-255, 255)?;
+
+                if selection == 0 {
+                    effects.inner.push(Effect::Brightness(value as i16));
+                } else {
+                    effects.inner.push(Effect::WrapBrightness(value as i16));
+                }
+            }
+            2 => {
+                effects.inner.push(Effect::Invert);
+            }
+            3 => {
+                effects.inner.push(Effect::ReverseBits);
+            }
+            4 | 5 => {
+                let value = Self::number_input(0, 255)?;
+
+                if selection == 4 {
+                    effects.inner.push(Effect::Min(value as u8));
+                } else {
+                    effects.inner.push(Effect::Max(value as u8));
+                }
+            }
+            _ => return Err(anyhow::Error::msg("Not implemented")),
+        };
+
+        Ok(Action::Exit)
+    }
+
+    fn load_effects(&mut self) -> Result<Action> {
+        let path = Self::file_path_input(false, true)?;
+
+        match Effects::load(path) {
+            Ok(val) => self.effects = Some(val),
+            Err(e) => {
+                warn!("Failed opening effects file: {}", e);
+                self.effects = None
+            }
+        }
+
+        Ok(Action::Exit)
+    }
+
+    fn save_effects(&mut self) -> Result<Action> {
+        if let Some(val) = &self.effects {
+            let path = Self::file_path_input(true, false)?;
+
+            if let Err(e) = val.save(path) {
+                warn!("Error saving effects to file: {}", e);
+            }
+        } else {
+            warn!("No effects")
+        }
+
+        Ok(Action::Exit)
+    }
+
+    fn number_input(min: i32, max: i32) -> Result<i32> {
+        let prompt = format!("Enter value ({} to {})", min, max);
+
+        let value = Input::<i32>::with_theme(&ColorfulTheme::default())
+            .with_prompt(prompt)
+            .validate_with(|input: &i32| -> Result<(), &str> {
+                if *input > max {
+                    Err("Value too big")
+                } else if *input < min {
+                    Err("Value too small")
+                } else {
+                    Ok(())
+                }
+            })
+            .interact()?;
+
+        Ok(value)
+    }
+
+    fn apply(&mut self) -> Result<Action> {
+        if let Some(i) = &self.input
+            && let Some(o) = &self.output
+            && let Some(e) = &self.effects
+            && !e.inner.is_empty()
+        {
+            let mut image = i.clone();
+            image.effects(e);
+            if let Err(err) = image.save(o) {
+                warn!("Failed to save image: {}", err)
+            }
+        } else {
+            warn!("You need to specify input, output and at least one effect")
+        }
+
+        Ok(Action::Exit)
+    }
+
+    fn file_path_input(warn_existing: bool, warn_nonexisting: bool) -> Result<String> {
+        let path = Input::<String>::with_theme(&ColorfulTheme::default())
+            .with_prompt("Enter path")
+            .interact()?;
+
+        if warn_existing {
+            match fs::exists(&path) {
+                Ok(true) => warn!("File already exists and will be overwritten"),
+                Ok(false) => (),
+                Err(_) => warn!("If this file exists, it will be overwritten"),
+            }
+        }
+
+        if warn_nonexisting {
+            match fs::exists(&path) {
+                Ok(true) => (),
+                Ok(false) => warn!("File does not exist"),
+                Err(_) => warn!("File might not exist"),
+            }
+        }
+
+        Ok(path)
     }
 }
