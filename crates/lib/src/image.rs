@@ -7,7 +7,7 @@ use std::{
 
 use anyhow::{Context, Result};
 use image::{RgbImage, RgbaImage};
-use log::info;
+use log::{debug, info};
 
 use crate::{Effect, Effects};
 
@@ -32,11 +32,13 @@ impl Image {
         let path = path.as_ref();
         let time = Instant::now();
 
-        let img = image::open(path)
-            .context("Failed to load image")?
-            .into_rgba8();
+        debug!("Reading '{}'", path.to_str().unwrap_or("image"));
+        let img = image::open(path).context("Failed to load image")?;
 
-        info!(
+        debug!("Converting to RGBA8");
+        let img = img.into_rgba8();
+
+        debug!(
             "Loaded '{}' in {}s",
             path.to_str().unwrap_or("image"),
             time.elapsed().as_secs_f32()
@@ -61,11 +63,11 @@ impl Image {
         })
     }
 
-    pub fn save(&self, path: impl AsRef<Path>, overwrite: bool) -> Result<&Self> {
+    pub fn save(&self, path: impl AsRef<Path>) -> Result<&Self> {
         let time = Instant::now();
 
         // TODO: remove the exports?
-        if overwrite && fs::exists(&path).unwrap_or(false) {
+        if fs::exists(&path).unwrap_or(false) {
             fs::remove_file(&path).context("Failed to remove old image")?;
         }
 
@@ -135,6 +137,10 @@ impl Image {
             time.elapsed().as_secs_f32()
         );
         self
+    }
+
+    pub fn path(&self) -> &Path {
+        &self.path
     }
 
     pub(crate) fn apply_closure<F>(&mut self, mut f: F) -> &mut Self

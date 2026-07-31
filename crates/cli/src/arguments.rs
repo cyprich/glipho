@@ -6,17 +6,19 @@ use clap::Parser;
 #[command(
     about = "Rusty Fotos - Image manipulation software to make glitchy effects",
     long_about = "Rusty Fotos - Image manipulation software to make glitchy effects
-You can either run via interactive mode (-i) or by specifying Image file (-f) and Effects file (-e)
+You can either run via manual mode (-m) or by specifying input image (-i), output image (-o) and effects file (-e)
 Effects file can be created in interactive mode"
 )]
-pub(crate) struct Cli {
+pub(crate) struct Arguments {
     #[arg(short, long, action = clap::ArgAction::SetTrue)]
-    pub interactive: Option<bool>,
-
-    #[arg(short = 'f', long)]
-    pub image_file: Option<String>,
+    pub manual: Option<bool>,
 
     #[arg(short, long)]
-    pub effects_file: Option<String>,
-    // steps: Option<Vec<Step>>,
+    pub input: Option<String>,
+
+    #[arg(short, long)]
+    pub output: Option<String>,
+
+    #[arg(short, long)]
+    pub effects: Option<String>,
 }

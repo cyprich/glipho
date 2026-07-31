@@ -42,38 +42,65 @@ By combining these effects, you can achieve cool effects, for example...
 
 ![example1](./examples/example1.jpg)
 
-## Usage
+## Usage and running
 
 Program comes in two variants
 
 - CLI - console app - lightweight, best for automated scripts, with possibility of interactive mode
-- GUI - desktop app - easy use
+- GUI - desktop app - easy to use
 
 ### CLI
 
-You can run it either via `cargo run --bin cli` or use precompiled binary from [Releases page](https://github.com/cyprich/glipho/releases)
+You can either use [precompiled binary](https://github.com/cyprich/glipho/releases) or build and run via Cargo  
+You you have to specify some of these parameters
 
-You can specify multiple parameters
+| Short format | Long format | Description                                 |
+| ------------ | ----------- | ------------------------------------------- |
+| `-i`         | `--input`   | Path of image, which you want to modify     |
+| `-o`         | `--output`  | Path of output image                        |
+| `-e`         | `--effects` | Path of file containing effects             |
+| `-m`         | `--manual`  | Whether to run in manual (interactive) mode |
+| `-h`         | `--help`    | Show help                                   |
 
-| Short format | Long format      | Description                            |
-| ------------ | ---------------- | -------------------------------------- |
-| `-f`         | `--image-file`   | Path of file, which you want to modify |
-| `-e`         | `--effects-file` | Path of file containing effects        |
-| `-i`         | `--interactive`  | Run interactively                      |
-| `-h`         | `--help`         | Show help                              |
+#### Manual mode
 
-So basically you have two ways of running the program - Interactively (with `-i`) or Non-interactively (without `-i`)  
-If you are running Non-interactively, you **have to** specify the `-f` and `-e` files, otherwise the program will have nothing to do and will crash
+You can run this program in manual (interactive) mode with the `-m` flag, where you can manually specify input/output images and effects
 
-If you are running it via cargo, you can specify the parameters like this: `cargo run --bin cli -- -i`
+```bash
+# running precompiled binary
+./glipho-cli -m
+./glipho-cli -m -i image.jpg -o result.jpg -e effects.json
+
+# building from source and running via cargo
+cargo run --bin cli -- -m
+cargo run --bin cli -- -m -i image.jpg -o result.jpg -e effects.json
+```
+
+#### Automatic mode
+
+You can run this program in automatic (script) mode, but you have to specify the `-i`, `-o` and `-e` flags  
+Program will just run, without the need of user interaction, making it ideal for bulk image editing
+
+```bash
+# running precompiled binary
+./glipho-cli -i image.jpg -o result.jpg -e effects.json
+
+# building from source and running via cargo
+cargo run --bin cli -- -i image.jpg -o result.jpg -e effects.json
+```
 
 ### GUI
 
-We have GUI version via [Slint](https://slint.dev/)!
+We have GUI version via [Slint](https://slint.dev/)!  
+You can either use [precompiled binary](https://github.com/cyprich/glipho/releases) or build and run via Cargo
 
-Just download the version for your operating system from the [Releases page](https://github.com/cyprich/glipho/releases)
+```bash
+# running precompiled binary
+./glipho-gui
 
-You can compile and run it manually with `cargo run --bin gui`
+# building from source and running via cargo
+cargo run --bin gui
+```
 
 ## TODOs and Future plans
 

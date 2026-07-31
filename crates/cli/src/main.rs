@@ -1,96 +1,64 @@
-use std::time::Instant;
+use std::fs;
 
 use ::clap::Parser;
 use anyhow::{Context, Error, Result};
 use lib::{Effects, Image};
-use log::{error, info};
+use log::{error, warn};
 
-// use plotters::prelude::*;
+use crate::{arguments::Arguments, manual::Manual};
 
-use crate::clap::Cli;
-
-mod clap;
-mod interactive;
+mod action;
+mod arguments;
+mod manual;
+mod screen;
 
 fn main() -> Result<()> {
-    let time = Instant::now();
-    // TODO mkdir exports
+    // TODO: make logger prettier
     simple_logger::init().context("Failed to initialize Simple Logger")?;
 
-    // get filenames from arguments
-    let cli = Cli::parse();
-    let effects = match &cli.effects_file {
-        Some(val) => Some(Effects::load(val).context("Failed to load steps")?),
+    // parse arguments
+    let args = Arguments::parse();
+    let input = match &args.input {
+        Some(val) => Some(Image::open(val).context("Failed to load file")?),
         None => None,
     };
-    let image = match &cli.image_file {
-        Some(val) => Some(Image::open(val).context("Failed to load file")?),
+    let output = args.output.clone();
+    let effects = match &args.effects {
+        Some(val) => Some(Effects::load(val).context("Failed to load steps")?),
         None => None,
     };
 
     // apply
-    if let Some(interactive) = cli.interactive
-        && interactive
+    if let Some(manual) = args.manual
+        && manual
     {
-        crate::interactive::run(effects, image)?;
+        // running manually
+        let manual = Manual::new(input, output, effects);
+        manual.run()?;
     } else {
-        if effects.is_none() || image.is_none() {
-            error!("You have to specify image file and steps file when running non-interactively");
+        // TODO: if let some
+        // running in script
+        if effects.is_none() || input.is_none() || output.is_none() {
+            error!(
+                "You have to specify image input and output and effects file when running non-interactively"
+            );
             return Err(Error::msg("Invalid input arguments"));
         }
 
-        // chart(&image, "before.png")?;
+        let mut input = input.unwrap();
+        let output = output.unwrap();
         let effects = effects.unwrap();
-        image.unwrap().effects(&effects);
-        // chart(&image, "after.png")?;
+
+        input.effects(&effects);
+
+        if fs::exists(&output).unwrap_or(true) {
+            warn!("File '{}' already exists and will be overwritten", &output);
+        }
+
+        if let Err(e) = input.save(output) {
+            error!("Error while saving image: '{}'", e)
+        }
     }
 
-    info!("Program finished in {}s", time.elapsed().as_secs_f32());
     Ok(())
 }
-
-// fn chart(image: &Image, name: &str) -> Result<()> {
-//     info!("Starting charts");
-//
-//     let mut x: Vec<i32> = vec![];
-//     let mut r: Vec<i32> = vec![];
-//     let mut g: Vec<i32> = vec![];
-//     let mut b: Vec<i32> = vec![];
-//
-//     for (i, pixel) in image.pixels().unwrap().enumerate() {
-//         x.push(i as i32);
-//         r.push(pixel.0[0].into());
-//         g.push(pixel.0[1].into());
-//         b.push(pixel.0[2].into());
-//     }
-//
-//     let root = BitMapBackend::new(name, (2000, 1000)).into_drawing_area();
-//     root.fill(&WHITE)?;
-//     let mut chart = ChartBuilder::on(&root).build_cartesian_2d(0..x.len(), 0..255)?;
-//
-//     info!("About to insert data");
-//
-//     chart.draw_series(LineSeries::new(
-//         r.iter().enumerate().map(|(x, y)| (x, *y)),
-//         &RED,
-//     ))?;
-//     info!("R done");
-//
-//     chart.draw_series(LineSeries::new(
-//         g.iter().enumerate().map(|(x, y)| (x, *y)),
-//         &GREEN,
-//     ))?;
-//     info!("G done");
-//
-//     chart.draw_series(LineSeries::new(
-//         b.iter().enumerate().map(|(x, y)| (x, *y)),
-//         &BLUE,
-//     ))?;
-//     info!("B done");
-//
-//     root.present()?;
-//
-//     info!("Charts done");
-//
-//     Ok(())
-// }
