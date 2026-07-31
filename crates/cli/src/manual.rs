@@ -10,6 +10,7 @@ use crate::{action::Action, screen::Screen};
 pub struct Manual {
     input: Option<Image>,
     output: Option<String>,
+    // TODO: make this non-optional
     effects: Option<Effects>,
     screen: Screen,
 }
@@ -212,12 +213,13 @@ impl Manual {
                 .enumerate()
                 .map(|(i, e)| format!("    {}. {}", i + 1, e));
 
-            let selection = MultiSelect::with_theme(&ColorfulTheme::default())
+            let mut selection = MultiSelect::with_theme(&ColorfulTheme::default())
                 .with_prompt("Delete effects")
                 .items(items)
                 .interact()?;
 
-            // TODO: this does not work right - index updates
+            // sort from highest to lowest, so the index does not change mid-deleting
+            selection.sort_unstable_by(|a, b| b.cmp(a));
             for i in selection {
                 effects.inner.remove(i);
             }
