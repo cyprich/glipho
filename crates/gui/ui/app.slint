@@ -1,44 +1,45 @@
 import { Button } from "std-widgets.slint";
+import { EffectStruct, EffectElement } from "effect.slint";
 export component App inherits Window {
     width: 1200px;
     height: 800px;
     title: "glipho";
 
-    in-out property <int> counter;
-    callback increase();
+    in property <[EffectStruct]> effects;
 
     GridLayout {
+        spacing: 16px;
         padding: 16px;
-        spacing: 8px;
 
+        // row with titles
         Row {
             Text {
-                text: "The counter is currently set to \{root.counter}";
-            }
-
-            Button {
-                text: "+";
-                clicked => {
-                    root.increase();
-                }
-            }
-        }
-
-        Row {
-            Text {
-                text: "hello world";
-                height: 24px;
-            }
-        }
-
-        Row {
-            Text {
-                text: "Steps";
+                text: "Effects";
             }
 
             Text {
                 text: "Image preview";
             }
         }
+
+        // row with content
+        Row {
+            // effects
+            VerticalLayout {
+                spacing: 8px;
+
+                for effect in effects: EffectElement {
+                    effect: effect;
+                }
+            }
+
+            // image preview
+            Text {
+                text: "TODO: image preview";
+            }
+        }
+
+        // filling at the bottom - so effects does not take up all the space
+        Rectangle { }
     }
 }

@@ -8,6 +8,7 @@ build = "build.rs"
 anyhow = "1.0.103"
 simple_logger = "5.2.0"
 slint = "1.17.1"
+lib = { path = "../lib" }
 
 [build-dependencies]
 slint-build = "1.17.1"

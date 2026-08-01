@@ -1,13 +1,8 @@
 fn main() {
-    #[rustfmt::skip]
-    let build_files = [
-        "ui/app.slint",
-        "ui/counter.slint"
-    ];
+    let path = "ui/app.slint";
+    let result = slint_build::compile(path);
 
-    for f in build_files {
-        if let Err(e) = slint_build::compile(f) {
-            panic!("Failed to compile {f}\n{e}")
-        }
+    if let Err(e) = result {
+        panic!("Failed to compile {}\n{}", path, e)
     }
 }

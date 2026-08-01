@@ -2017,6 +2017,7 @@ name = "gui"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "lib",
  "simple_logger",
  "slint",
  "slint-build",

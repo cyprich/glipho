@@ -1,0 +1,74 @@
+import { Slider, Button } from "std-widgets.slint";
+export struct EffectStruct {
+    id: int,
+    name: string,
+    has_value: bool,
+    value: int,
+    min_value: int,
+    max_value: int,
+    indicator_color: color
+}
+
+export component EffectElement inherits Rectangle {
+    in property <EffectStruct> effect;
+
+    private property <int> value;
+
+    background: rgb(48, 48, 48);
+    border-radius: 4px;
+
+    HorizontalLayout {
+        spacing: 4px;
+
+        // inticator
+        Rectangle {
+            width: 8px;
+            background: effect.indicator-color;
+            border-top-left-radius: 4px;
+            border-bottom-left-radius: 4px;
+            horizontal-stretch: 0;
+        }
+
+        // main content
+        VerticalLayout {
+            padding: 8px;
+            spacing: 6px;
+            alignment: start;
+            horizontal-stretch: 1;
+
+            Text {
+                text: effect.has-value ? "\{effect.name} (\{root.value})" : effect.name;
+                font-size: 16px;
+                font-weight: FontWeight.semi-bold;
+            }
+
+            if effect.has_value: VerticalLayout {
+                Slider {
+                    value: root.value;
+                    minimum: effect.min-value;
+                    maximum: effect.max-value;
+                    step: 1;
+                }
+
+                Text {
+                    text: "\{effect.min-value} to \{effect.max-value}";
+                    font-italic: true;
+                }
+            }
+        }
+
+        // controls
+        VerticalLayout {
+            padding: 12px;
+            spacing: 4px;
+            alignment: start;
+
+            Image {
+                source: @image-url("assets/x.svg");
+                colorize: whitesmoke;
+                width: 20px;
+                height: 20px;
+            }
+        }
+    }
+}
