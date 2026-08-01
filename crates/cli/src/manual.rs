@@ -11,7 +11,7 @@ pub struct Manual {
     input: Option<Image>,
     output: Option<String>,
     // TODO: make this non-optional
-    effects: Option<Effects>,
+    effects: Effects,
     screen: Screen,
 }
 
@@ -20,7 +20,7 @@ impl Manual {
         Self {
             input,
             output,
-            effects,
+            effects: effects.unwrap_or_default(),
             screen: Screen::Main,
         }
     }
@@ -77,13 +77,7 @@ impl Manual {
                 None => "None".to_string(),
             }
         );
-        let effects = format!(
-            "Effects ({} defined)",
-            match &self.effects {
-                Some(val) => val.inner.len(),
-                None => 0,
-            }
-        );
+        let effects = format!("Effects ({} defined)", self.effects.len());
         let apply = "Apply effects and export image".to_string();
         let exit = "Exit".to_string();
 
@@ -136,17 +130,17 @@ impl Manual {
     fn render_effects(&mut self) -> Result<Action> {
         let mut items = vec![];
 
-        if let Some(val) = &self.effects {
-            let val = format!("View effects ({} defined)", val.inner.len());
+        if !self.effects.is_empty() {
+            let val = format!("View effects ({} defined)", self.effects.len());
             items.push(val);
         }
         items.push("Add effect".to_string());
 
-        if self.effects.is_some() {
-            items.push("Delete effect".to_string());
+        if !self.effects.is_empty() {
+            items.push("Delete effects".to_string());
         }
         items.push("Load from file".to_string());
-        if self.effects.is_some() {
+        if !self.effects.is_empty() {
             items.push("Save to file".to_string());
         }
         items.push("Cancel".to_string());
@@ -156,16 +150,16 @@ impl Manual {
             .items(&items)
             .interact()?;
 
-        match (&self.effects, selection) {
-            (Some(_), 0) => Ok(Action::Change(Screen::ViewEffects)),
-            (Some(_), 1) => Ok(Action::Change(Screen::AddEffect)),
-            (Some(_), 2) => Ok(Action::Change(Screen::DeleteEffects)),
-            (Some(_), 3) => Ok(Action::Change(Screen::LoadEffects)),
-            (Some(_), 4) => Ok(Action::Change(Screen::SaveEffects)),
-            (Some(_), 5) => Ok(Action::Exit),
-            (None, 0) => Ok(Action::Change(Screen::AddEffect)),
-            (None, 1) => Ok(Action::Change(Screen::LoadEffects)),
-            (None, 2) => Ok(Action::Exit),
+        match (!self.effects.is_empty(), selection) {
+            (true, 0) => Ok(Action::Change(Screen::ViewEffects)),
+            (true, 1) => Ok(Action::Change(Screen::AddEffect)),
+            (true, 2) => Ok(Action::Change(Screen::DeleteEffects)),
+            (true, 3) => Ok(Action::Change(Screen::LoadEffects)),
+            (true, 4) => Ok(Action::Change(Screen::SaveEffects)),
+            (true, 5) => Ok(Action::Exit),
+            (false, 0) => Ok(Action::Change(Screen::AddEffect)),
+            (false, 1) => Ok(Action::Change(Screen::LoadEffects)),
+            (false, 2) => Ok(Action::Exit),
             (_, _) => Err(anyhow::Error::msg("Invalid selection index")),
         }
     }
@@ -193,8 +187,9 @@ impl Manual {
     }
 
     fn view_effects(&mut self) -> Result<Action> {
-        if let Some(val) = &self.effects {
-            val.inner
+        if !self.effects.is_empty() {
+            self.effects
+                .inner
                 .iter()
                 .enumerate()
                 .for_each(|(i, e)| println!("    {}. {}", i + 1, e));
@@ -206,8 +201,9 @@ impl Manual {
     }
 
     fn delete_effects(&mut self) -> Result<Action> {
-        if let Some(effects) = &mut self.effects {
-            let items = effects
+        if !self.effects.is_empty() {
+            let items = &mut self
+                .effects
                 .inner
                 .iter()
                 .enumerate()
@@ -221,7 +217,7 @@ impl Manual {
             // sort from highest to lowest, so the index does not change mid-deleting
             selection.sort_unstable_by(|a, b| b.cmp(a));
             for i in selection {
-                effects.inner.remove(i);
+                self.effects.inner.remove(i);
             }
         } else {
             println!("There are no effects")
@@ -244,7 +240,7 @@ impl Manual {
             .items(items)
             .interact()?;
 
-        let effects = self.effects.get_or_insert_with(Effects::default);
+        let effects = &mut self.effects;
 
         match selection {
             0 | 1 => {
@@ -281,10 +277,10 @@ impl Manual {
         let path = Self::file_path_input(false, true)?;
 
         match Effects::load(path) {
-            Ok(val) => self.effects = Some(val),
+            Ok(val) => self.effects = val,
             Err(e) => {
                 warn!("Failed opening effects file: {}", e);
-                self.effects = None
+                self.effects.inner = Vec::default()
             }
         }
 
@@ -292,10 +288,10 @@ impl Manual {
     }
 
     fn save_effects(&mut self) -> Result<Action> {
-        if let Some(val) = &self.effects {
+        if !self.effects.is_empty() {
             let path = Self::file_path_input(true, false)?;
 
-            if let Err(e) = val.save(path) {
+            if let Err(e) = self.effects.save(path) {
                 warn!("Error saving effects to file: {}", e);
             }
         } else {
@@ -327,11 +323,10 @@ impl Manual {
     fn apply(&mut self) -> Result<Action> {
         if let Some(i) = &self.input
             && let Some(o) = &self.output
-            && let Some(e) = &self.effects
-            && !e.inner.is_empty()
+            && !&self.effects.inner.is_empty()
         {
             let mut image = i.clone();
-            image.effects(e);
+            image.effects(&self.effects);
             if let Err(err) = image.save(o) {
                 warn!("Failed to save image: {}", err)
             }

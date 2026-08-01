@@ -70,4 +70,20 @@ impl Effects {
 
         Ok(())
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.inner.is_empty()
+    }
+
+    pub fn len(&self) -> usize {
+        self.inner.len()
+    }
+
+    pub fn push(&mut self, value: Effect) {
+        self.inner.push(value)
+    }
+
+    pub fn remove(&mut self, index: usize) -> Effect {
+        self.inner.remove(index)
+    }
 }
