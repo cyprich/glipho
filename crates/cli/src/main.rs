@@ -36,27 +36,26 @@ fn main() -> Result<()> {
         let manual = Manual::new(input, output, effects);
         manual.run()?;
     } else {
-        // TODO: if let some
         // running in script
-        if effects.is_none() || input.is_none() || output.is_none() {
+        if let Some(mut i) = input
+            && let Some(o) = output
+            && let Some(e) = effects
+            && !e.is_empty()
+        {
+            i.effects(&e);
+
+            if fs::exists(&o).unwrap_or(true) {
+                warn!("File '{}' already exists and will be overwritten", &o);
+            }
+
+            if let Err(e) = i.save(o) {
+                error!("Error while saving image: '{}'", e)
+            }
+        } else {
             error!(
-                "You have to specify image input and output and effects file when running non-interactively"
+                "You have to specify input, output and at least one effect when running non-interactively"
             );
             return Err(Error::msg("Invalid input arguments"));
-        }
-
-        let mut input = input.unwrap();
-        let output = output.unwrap();
-        let effects = effects.unwrap();
-
-        input.effects(&effects);
-
-        if fs::exists(&output).unwrap_or(true) {
-            warn!("File '{}' already exists and will be overwritten", &output);
-        }
-
-        if let Err(e) = input.save(output) {
-            error!("Error while saving image: '{}'", e)
         }
     }
 

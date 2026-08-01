@@ -66,7 +66,6 @@ impl Image {
     pub fn save(&self, path: impl AsRef<Path>) -> Result<&Self> {
         let time = Instant::now();
 
-        // TODO: remove the exports?
         if fs::exists(&path).unwrap_or(false) {
             fs::remove_file(&path).context("Failed to remove old image")?;
         }

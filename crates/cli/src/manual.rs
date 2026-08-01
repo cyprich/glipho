@@ -10,7 +10,6 @@ use crate::{action::Action, screen::Screen};
 pub struct Manual {
     input: Option<Image>,
     output: Option<String>,
-    // TODO: make this non-optional
     effects: Effects,
     screen: Screen,
 }
@@ -26,7 +25,6 @@ impl Manual {
     }
 
     pub fn run(mut self) -> Result<()> {
-        // TODO: optional interactions
         loop {
             let action = match self.screen {
                 Screen::Main => self.render_main(),
@@ -79,7 +77,7 @@ impl Manual {
         );
         let effects = format!("Effects ({} defined)", self.effects.len());
         let apply = "Apply effects and export image".to_string();
-        let exit = "Exit".to_string();
+        let exit = "Quit".to_string();
 
         let items = [image, effects, apply, exit];
         let selection = Select::with_theme(&ColorfulTheme::default())
@@ -111,7 +109,7 @@ impl Manual {
                 None => String::default(),
             }
         );
-        let cancel = "Cancel".to_string();
+        let cancel = "Exit".to_string();
         let items = [input, output, cancel];
 
         let selection = Select::with_theme(&ColorfulTheme::default())
@@ -143,7 +141,7 @@ impl Manual {
         if !self.effects.is_empty() {
             items.push("Save to file".to_string());
         }
-        items.push("Cancel".to_string());
+        items.push("Exit".to_string());
 
         let selection = Select::with_theme(&ColorfulTheme::default())
             .with_prompt("Effects menu")
@@ -209,15 +207,17 @@ impl Manual {
                 .enumerate()
                 .map(|(i, e)| format!("    {}. {}", i + 1, e));
 
-            let mut selection = MultiSelect::with_theme(&ColorfulTheme::default())
+            let selection = MultiSelect::with_theme(&ColorfulTheme::default())
                 .with_prompt("Delete effects")
                 .items(items)
-                .interact()?;
+                .interact_opt()?;
 
-            // sort from highest to lowest, so the index does not change mid-deleting
-            selection.sort_unstable_by(|a, b| b.cmp(a));
-            for i in selection {
-                self.effects.inner.remove(i);
+            if let Some(mut selection) = selection {
+                // sort from highest to lowest, so the index does not change mid-deleting
+                selection.sort_unstable_by(|a, b| b.cmp(a));
+                for i in selection {
+                    self.effects.inner.remove(i);
+                }
             }
         } else {
             println!("There are no effects")
@@ -238,33 +238,37 @@ impl Manual {
         let selection = Select::with_theme(&ColorfulTheme::default())
             .with_prompt("Add Effect")
             .items(items)
-            .interact()?;
+            .interact_opt()?;
 
-        let effects = &mut self.effects;
+        if selection.is_none() {
+            return Ok(Action::Exit);
+        }
+
+        let selection = selection.unwrap();
 
         match selection {
             0 | 1 => {
                 let value = Self::number_input(-255, 255)?;
 
                 if selection == 0 {
-                    effects.inner.push(Effect::Brightness(value as i16));
+                    self.effects.push(Effect::Brightness(value as i16));
                 } else {
-                    effects.inner.push(Effect::WrapBrightness(value as i16));
+                    self.effects.push(Effect::WrapBrightness(value as i16));
                 }
             }
             2 => {
-                effects.inner.push(Effect::Invert);
+                self.effects.push(Effect::Invert);
             }
             3 => {
-                effects.inner.push(Effect::ReverseBits);
+                self.effects.push(Effect::ReverseBits);
             }
             4 | 5 => {
                 let value = Self::number_input(0, 255)?;
 
                 if selection == 4 {
-                    effects.inner.push(Effect::Min(value as u8));
+                    self.effects.push(Effect::Min(value as u8));
                 } else {
-                    effects.inner.push(Effect::Max(value as u8));
+                    self.effects.push(Effect::Max(value as u8));
                 }
             }
             _ => return Err(anyhow::Error::msg("Not implemented")),
@@ -301,25 +305,6 @@ impl Manual {
         Ok(Action::Exit)
     }
 
-    fn number_input(min: i32, max: i32) -> Result<i32> {
-        let prompt = format!("Enter value ({} to {})", min, max);
-
-        let value = Input::<i32>::with_theme(&ColorfulTheme::default())
-            .with_prompt(prompt)
-            .validate_with(|input: &i32| -> Result<(), &str> {
-                if *input > max {
-                    Err("Value too big")
-                } else if *input < min {
-                    Err("Value too small")
-                } else {
-                    Ok(())
-                }
-            })
-            .interact()?;
-
-        Ok(value)
-    }
-
     fn apply(&mut self) -> Result<Action> {
         if let Some(i) = &self.input
             && let Some(o) = &self.output
@@ -337,10 +322,31 @@ impl Manual {
         Ok(Action::Exit)
     }
 
+    fn number_input(min: i32, max: i32) -> Result<i32> {
+        let prompt = format!("Enter value ({} to {})", min, max);
+
+        let value = Input::<i32>::with_theme(&ColorfulTheme::default())
+            .with_prompt(prompt)
+            .allow_empty(true)
+            .validate_with(|input: &i32| -> Result<(), &str> {
+                if *input > max {
+                    Err("Value too big")
+                } else if *input < min {
+                    Err("Value too small")
+                } else {
+                    Ok(())
+                }
+            })
+            .interact_text()?;
+
+        Ok(value)
+    }
+
     fn file_path_input(warn_existing: bool, warn_nonexisting: bool) -> Result<String> {
         let path = Input::<String>::with_theme(&ColorfulTheme::default())
             .with_prompt("Enter path")
-            .interact()?;
+            .allow_empty(true)
+            .interact_text()?;
 
         if warn_existing {
             match fs::exists(&path) {
