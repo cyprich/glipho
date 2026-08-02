@@ -1,0 +1,59 @@
+import { Button } from "std-widgets.slint";
+
+component HeaderItem inherits Rectangle {
+    in property <string> text;
+    callback clicked;
+
+    background: touch.has-hover ? rgba(255, 255, 255, 0.05) : rgba(255, 255, 255, 0);
+
+    touch := TouchArea {
+        clicked => {
+            root.clicked();
+        }
+    }
+
+    VerticalLayout {
+        alignment: center;
+        padding-top: 6px;
+        padding-bottom: 6px;
+        padding-left: 10px;
+        padding-right: 10px;
+
+        Text {
+            text: root.text;
+        }
+    }
+}
+
+
+export component Header inherits Rectangle {
+    width: 100%;
+    background: rgb(64, 64, 64);
+
+    private property <int> count;
+
+    HorizontalLayout {
+        HeaderItem {
+            text: "Open";
+        }
+
+        HeaderItem {
+            text: "Save";
+        }
+
+        HeaderItem {
+            text: "Reset";
+        }
+
+        HeaderItem {
+            text: "Settings";
+        }
+
+        HeaderItem {
+            text: "Help";
+        }
+
+        // filling
+        Rectangle { }
+    }
+}

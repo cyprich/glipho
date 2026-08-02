@@ -28,6 +28,16 @@ pub struct Image {
 }
 
 impl Image {
+    pub fn width(&self) -> u32 {
+        self.width
+    }
+    pub fn height(&self) -> u32 {
+        self.height
+    }
+    pub fn pixels(&self) -> &[u8] {
+        &self.pixels
+    }
+
     pub fn open(path: impl AsRef<Path>) -> Result<Self> {
         let path = path.as_ref();
         let time = Instant::now();
@@ -104,11 +114,11 @@ impl Image {
         let result = match layer {
             Effect::Brightness(val) => match val >= &0i16 {
                 true => self.apply_closure(|x| *x = x.saturating_add(*val as u8)),
-                false => self.apply_closure(|x| *x = x.saturating_sub(*val as u8)),
+                false => self.apply_closure(|x| *x = x.saturating_sub((val * -1) as u8)),
             },
             Effect::WrapBrightness(val) => match val >= &0i16 {
                 true => self.apply_closure(|x| *x = x.wrapping_add(*val as u8)),
-                false => self.apply_closure(|x| *x = x.wrapping_sub(*val as u8)),
+                false => self.apply_closure(|x| *x = x.wrapping_sub((val * -1) as u8)),
             },
             Effect::Invert => self.apply_closure(|x| *x = 255 - *x),
             Effect::ReverseBits => self.apply_closure(|x| *x = x.reverse_bits()),

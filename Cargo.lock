@@ -2018,6 +2018,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "lib",
+ "log",
  "simple_logger",
  "slint",
  "slint-build",

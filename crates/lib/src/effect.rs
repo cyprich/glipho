@@ -23,6 +23,21 @@ impl Display for Effect {
 }
 
 impl Effect {
+    pub fn try_from_name(name: &str, value: i32) -> Option<Self> {
+        let name = name.to_lowercase().replace(' ', "");
+        let result = match name.as_str() {
+            "brightness" => Self::Brightness(value as i16),
+            "wrappedbrightness" => Self::WrapBrightness(value as i16),
+            "invert" => Self::Invert,
+            "reversebits" => Self::ReverseBits,
+            "min" => Self::Min(value as u8),
+            "max" => Self::Max(value as u8),
+            _ => return None,
+        };
+
+        Some(result)
+    }
+
     pub fn to_type(&self) -> String {
         match self {
             Effect::Brightness(_) => "Brightness",
@@ -40,6 +55,20 @@ impl Effect {
             Effect::Brightness(val) | Effect::WrapBrightness(val) => val.to_string(),
             Effect::Min(val) | Effect::Max(val) => val.to_string(),
             _ => "".into(),
+        }
+    }
+
+    pub fn change_value(&mut self, new_value: i32) -> bool {
+        match self {
+            Effect::Brightness(val) | Effect::WrapBrightness(val) => {
+                *val = new_value as i16;
+                true
+            }
+            Effect::Min(val) | Effect::Max(val) => {
+                *val = new_value as u8;
+                true
+            }
+            _ => false,
         }
     }
 }
@@ -69,6 +98,16 @@ impl Effects {
         fs::write(path, text).context("Failed to save to file")?;
 
         Ok(())
+    }
+
+    pub fn change_value(&mut self, id: usize, new_value: i32) -> bool {
+        let effect = self.inner.get_mut(id);
+
+        if let Some(effect) = effect {
+            effect.change_value(new_value)
+        } else {
+            false
+        }
     }
 
     pub fn is_empty(&self) -> bool {

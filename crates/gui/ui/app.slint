@@ -1,45 +1,198 @@
-import { Button } from "std-widgets.slint";
+import {
+    Button,
+    Switch,
+    ComboBox,
+    SpinBox,
+    ScrollView,
+} from "std-widgets.slint";
 import { EffectStruct, EffectElement } from "effect.slint";
+import { Header } from "header.slint";
+
+export enum EffectEnum { None, Brightness, WrapBrightness, Invert, ReverseBits, Min, Max }
+
 export component App inherits Window {
-    width: 1200px;
-    height: 800px;
+    maximized: true;
     title: "glipho";
 
+    // in properties
     in property <[EffectStruct]> effects;
+    in property <image> original_image;
+    in property <image> working_image;
 
-    GridLayout {
-        spacing: 16px;
-        padding: 16px;
+    // callbacks
+    callback effect_changed(id: int, value: int);
+    callback effect_added(name: string, value: int);
+    callback effect_removed(id: int);
 
-        // row with titles
-        Row {
-            Text {
-                text: "Effects";
-            }
+    // TODO: separate this into component
+    // adding effect
+    private property <EffectEnum> new_effect_enum;
+    private property <string> new_effect_name;
+    private property <int> new_effect_value;
 
-            Text {
-                text: "Image preview";
-            }
+    // adding effect help functions
+    pure function effect_from_name(name: string) -> EffectEnum {
+        if name == "Brightness" {
+            return Brightness;
+        } else if name == "Wrapped Brightness" {
+            return WrapBrightness;
+        } else if name == "Invert" {
+            return Invert;
+        } else if name == "Reverse Bits" {
+            return ReverseBits;
+        } else if name == "Min" {
+            return Min;
+        } else if name == "Max" {
+            return Max;
         }
+        return None;
+    }
 
-        // row with content
-        Row {
+    pure function new_effect_show_spinbox(effect: EffectEnum) -> bool {
+        effect == EffectEnum.Brightness
+            || effect == EffectEnum.WrapBrightness
+            || effect == EffectEnum.Min
+            || effect == EffectEnum.Max
+    }
+
+    pure function new_effect_min_max(effect: EffectEnum) -> [int] {
+        if effect == EffectEnum.Brightness || effect == EffectEnum.WrapBrightness {
+            return [-255, 255];
+        } else if effect == EffectEnum.Min || effect == EffectEnum.Max {
+            return [0, 255];
+        }
+        return [0, 0];
+    }
+
+    VerticalLayout {
+        // menu bar at the top of the screen
+        Header { }
+
+        // main content
+        HorizontalLayout {
+            spacing: 16px;
+            padding: 16px;
+
             // effects
-            VerticalLayout {
-                spacing: 8px;
+            ScrollView {
+                width: 50%;
 
-                for effect in effects: EffectElement {
-                    effect: effect;
+                VerticalLayout {
+                    spacing: 12px;
+
+                    // title
+                    Text {
+                        text: "Effects";
+                        font-weight: FontWeight.semi-bold;
+                    }
+
+                    // effects
+                    VerticalLayout {
+                        spacing: 8px;
+                        for effect in effects: EffectElement {
+                            effect: effect;
+                            effect_changed(id, value) => {
+                                root.effect_changed(id, value);
+                            }
+                            effect_removed(id) => {
+                                root.effect_removed(id);
+                            }
+                        }
+                    }
+
+                    // add effect
+                    Rectangle {
+                        width: 256px;
+
+                        VerticalLayout {
+                            padding-top: 8px;
+                            spacing: 6px;
+                            alignment: start;
+
+                            Text {
+                                text: "Add effect";
+                            }
+
+                            ComboBox {
+                                model: ["Brightness", "Wrapped Brightness", "Invert", "Reverse Bits", "Min", "Max"];
+                                current-index: 2;
+                                selected(val) => {
+                                    root.new_effect_enum = effect_from_name(val);
+                                    root.new_effect_name = val;
+                                }
+                            }
+
+                            // value input
+                            if new_effect_show_spinbox(root.new_effect_enum): VerticalLayout {
+                                spacing: 6px;
+
+                                SpinBox {
+                                    value: root.new_effect_value;
+                                    minimum: new_effect_min_max(root.new_effect_enum)[0];
+                                    maximum: new_effect_min_max(root.new_effect_enum)[1];
+
+                                    edited(value) => {
+                                        root.new_effect_value = value;
+                                    }
+                                }
+
+                                // limits (e.g. 0 to 255)
+                                Text {
+                                    text: "\{new_effect_min_max(root.new_effect_enum)[0]} to \{new_effect_min_max(root.new_effect_enum)[1]}";
+                                    font-italic: true;
+                                }
+                            }
+
+                            // confirm button
+                            Button {
+                                text: "Confirm";
+                                width: 128px;
+
+                                clicked => {
+                                    root.effect_added(root.new_effect_name, root.new_effect_value);
+                                }
+                            }
+                        }
+                    }
+
+                    // filling at the bottom
+                    Rectangle { }
                 }
             }
 
-            // image preview
-            Text {
-                text: "TODO: image preview";
+            // image
+            Rectangle {
+                width: 50%;
+
+                VerticalLayout {
+                    spacing: 8px;
+
+                    Text {
+                        text: "Image";
+                        font-size: 16px;
+                        font-weight: FontWeight.semi-bold;
+                    }
+
+                    Text {
+                        text: "Before";
+                    }
+
+                    Image {
+                        source: root.original_image;
+                    }
+
+                    Text {
+                        text: "After";
+                    }
+
+                    Image {
+                        source: root.working_image;
+                    }
+
+                    // filling at the bottom
+                Rectangle { }
+                }
             }
         }
-
-        // filling at the bottom - so effects does not take up all the space
-        Rectangle { }
     }
 }

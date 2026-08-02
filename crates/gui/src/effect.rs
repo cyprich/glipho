@@ -44,10 +44,11 @@ pub fn effect_to_model(effect: Effect, id: i32) -> EffectStruct {
     }
 }
 
-pub fn effects_to_model(effects: Effects) -> slint::ModelRc<EffectStruct> {
+pub fn effects_to_model(effects: &Effects) -> slint::ModelRc<EffectStruct> {
     let items = effects
         .inner
-        .into_iter()
+        .iter()
+        .cloned()
         .enumerate()
         .map(|(id, effect)| effect_to_model(effect, id as i32))
         .collect::<Vec<_>>();

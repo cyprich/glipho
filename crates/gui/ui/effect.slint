@@ -10,9 +10,20 @@ export struct EffectStruct {
 }
 
 export component EffectElement inherits Rectangle {
+    // input properties
     in property <EffectStruct> effect;
 
+    // callbacks
+    callback effect_changed(id: int, value: int);
+    callback effect_removed(id: int);
+
+    function update(value: int) {
+        root.value = Math.clamp(value, root.effect.min-value, root.effect.max-value);
+        root.effect_changed(root.effect.id, root.value);
+    }
+
     private property <int> value;
+    value: effect.value;
 
     background: rgb(48, 48, 48);
     border-radius: 4px;
@@ -33,21 +44,92 @@ export component EffectElement inherits Rectangle {
         VerticalLayout {
             padding: 8px;
             spacing: 6px;
-            alignment: start;
+            alignment: center;
             horizontal-stretch: 1;
 
+            // effect name + value
             Text {
                 text: effect.has-value ? "\{effect.name} (\{root.value})" : effect.name;
                 font-size: 16px;
                 font-weight: FontWeight.semi-bold;
             }
 
+            // value slider if applicable
             if effect.has_value: VerticalLayout {
                 Slider {
                     value: root.value;
                     minimum: effect.min-value;
                     maximum: effect.max-value;
                     step: 1;
+
+                    changed(val) => {
+                        root.value = val;
+                    }
+
+                    released(val) => {
+                        root.update(val);
+                    }
+                }
+
+                // quick action buttons
+                HorizontalLayout {
+                    spacing: 6px;
+                    padding-top: 8px;
+                    padding-bottom: 8px;
+
+                    Button {
+                        text: "-50";
+                        clicked => {
+                            root.update(value - 50);
+                        }
+                    }
+
+                    Button {
+                        text: "-10";
+                        clicked => {
+                            root.update(value - 10);
+                        }
+                    }
+
+                    Button {
+                        text: "-1";
+                        clicked => {
+                            root.update(value - 1);
+                        }
+                    }
+
+                    Button {
+                        text: "Reset";
+                        clicked => {
+                            root.update(0);
+                        }
+                    }
+
+                    Button {
+                        text: "+1";
+                        clicked => {
+                            root.update(value + 1);
+                        }
+                    }
+
+                    Button {
+                        text: "+10";
+                        clicked => {
+                            root.update(value + 10);
+                        }
+                    }
+
+                    Button {
+                        text: "+50";
+                        clicked => {
+                            root.update(value + 50);
+                        }
+                    }
+                }
+
+                // text margin
+                Rectangle {
+                    height: 4px;
                 }
 
                 Text {
@@ -63,11 +145,18 @@ export component EffectElement inherits Rectangle {
             spacing: 4px;
             alignment: start;
 
-            Image {
-                source: @image-url("assets/x.svg");
-                colorize: whitesmoke;
-                width: 20px;
-                height: 20px;
+            TouchArea {
+                mouse-cursor: pointer;
+                clicked => {
+                    root.effect_removed(root.effect.id);
+                }
+
+                Image {
+                    source: @image-url("assets/x.svg");
+                    colorize: whitesmoke;
+                    width: 20px;
+                    height: 20px;
+                }
             }
         }
     }
