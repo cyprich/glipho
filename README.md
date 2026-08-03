@@ -72,8 +72,8 @@ You can run this program in manual (interactive) mode with the `-m` flag, where 
 ./glipho-cli -m -i image.jpg -o result.jpg -e effects.json
 
 # building from source and running via cargo
-cargo run --bin cli -- -m
-cargo run --bin cli -- -m -i image.jpg -o result.jpg -e effects.json
+cargo run --release --bin cli -- -m
+cargo run --release --bin cli -- -m -i image.jpg -o result.jpg -e effects.json
 ```
 
 #### Automatic mode
@@ -86,7 +86,7 @@ Program will just run, without the need of user interaction, making it ideal for
 ./glipho-cli -i image.jpg -o result.jpg -e effects.json
 
 # building from source and running via cargo
-cargo run --bin cli -- -i image.jpg -o result.jpg -e effects.json
+cargo run --release --bin cli -- -i image.jpg -o result.jpg -e effects.json
 ```
 
 ### GUI
@@ -99,12 +99,11 @@ You can either use [precompiled binary](https://github.com/cyprich/glipho/releas
 ./glipho-gui
 
 # building from source and running via cargo
-cargo run --bin gui
+cargo run --release --bin gui
 ```
 
 ## TODOs and Future plans
 
 - Make it work :)
-- Parallel processing
 - Audio Layers
 - GPU acceleration

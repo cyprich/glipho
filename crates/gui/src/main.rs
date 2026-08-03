@@ -29,7 +29,7 @@ fn main() -> anyhow::Result<()> {
 
     // temp sample input image
     info!("Loading input image");
-    let original_image = Image::open("sample3.jpg").unwrap();
+    let original_image = Image::open("sample2.jpg").unwrap();
     let mut working_image = original_image.clone();
     working_image.effects(&effects);
 

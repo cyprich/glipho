@@ -6,8 +6,12 @@ use std::{
 };
 
 use anyhow::{Context, Result};
-use image::{RgbImage, RgbaImage};
-use log::{debug, info};
+use image::{ImageReader, RgbImage, RgbaImage};
+use log::{debug, info, trace};
+use rayon::{
+    iter::ParallelIterator,
+    slice::{ParallelSlice, ParallelSliceMut},
+};
 
 use crate::{Effect, Effects};
 
@@ -39,29 +43,39 @@ impl Image {
     }
 
     pub fn open(path: impl AsRef<Path>) -> Result<Self> {
+        let path_name = path.as_ref().to_string_lossy();
         let path = path.as_ref();
         let time = Instant::now();
 
-        debug!("Reading '{}'", path.to_str().unwrap_or("image"));
-        let img = image::open(path).context("Failed to load image")?;
+        debug!("Reading '{}'", path_name);
+        let reader = ImageReader::open(path).context("Failed to read image path")?;
+        trace!("Reader done in {}", &time.elapsed().as_secs_f32());
+        let reader_format = reader
+            .format()
+            .context("Failed to determine image format")?;
+        trace!("Format done in {}", &time.elapsed().as_secs_f32());
+
+        debug!("Decoding");
+        let img = reader.decode().context("Failed to decode image")?;
+        trace!("Decode done in {}", &time.elapsed().as_secs_f32());
 
         debug!("Converting to RGBA8");
         let img = img.into_rgba8();
+        trace!("Convert done in {}", &time.elapsed().as_secs_f32());
+
+        // let img = image::open(path)?;
+        // let img = img.into_rgba8();
 
         debug!(
             "Loaded '{}' in {}s",
-            path.to_str().unwrap_or("image"),
+            path_name,
             time.elapsed().as_secs_f32()
         );
 
-        let format = if let Some(val) = path.to_string_lossy().rsplit('.').next() {
-            match val.to_lowercase().as_str() {
-                "jpg" | "jpeg" => ImageFormat::Jpg,
-                "png" => ImageFormat::Png,
-                _ => ImageFormat::Other,
-            }
-        } else {
-            ImageFormat::Other
+        let format = match reader_format {
+            image::ImageFormat::Png => ImageFormat::Png,
+            image::ImageFormat::Jpeg => ImageFormat::Jpg,
+            _ => ImageFormat::Other,
         };
 
         Ok(Self {
@@ -82,12 +96,13 @@ impl Image {
 
         match self.format {
             ImageFormat::Jpg => {
-                let mut pixels = Vec::with_capacity((self.width * self.height * 3) as usize);
-                self.pixels.chunks_exact(4).for_each(|p| {
-                    pixels.push(p[0]);
-                    pixels.push(p[1]);
-                    pixels.push(p[2]);
-                });
+                let pixels = Vec::with_capacity((self.width * self.height * 3) as usize);
+
+                self.pixels
+                    .par_chunks_exact(4)
+                    .map(|p| [p[0], p[1], p[2]])
+                    .flatten()
+                    .collect::<Vec<u8>>();
 
                 let img = RgbImage::from_raw(self.width, self.height, pixels)
                     .context("Failed to construct RGB Image")?;
@@ -142,7 +157,7 @@ impl Image {
         }
         info!(
             "Applied {} layers in {}s",
-            &effects.inner.len(),
+            &effects.len(),
             time.elapsed().as_secs_f32()
         );
         self
@@ -152,15 +167,15 @@ impl Image {
         &self.path
     }
 
-    pub(crate) fn apply_closure<F>(&mut self, mut f: F) -> &mut Self
+    pub(crate) fn apply_closure<F>(&mut self, f: F) -> &mut Self
     where
-        F: FnMut(&mut u8),
+        F: Fn(&mut u8) + Send + Sync,
     {
-        for p in self.pixels.chunks_exact_mut(4) {
+        self.pixels.par_chunks_exact_mut(4).for_each(|p| {
             f(&mut p[0]);
             f(&mut p[1]);
             f(&mut p[2]);
-        }
+        });
 
         self
     }

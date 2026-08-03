@@ -4,6 +4,7 @@ import {
     ComboBox,
     SpinBox,
     ScrollView,
+    HorizontalBox,
 } from "std-widgets.slint";
 import { EffectStruct, EffectElement } from "effect.slint";
 import { Header } from "header.slint";
@@ -167,26 +168,52 @@ export component App inherits Window {
                 VerticalLayout {
                     spacing: 8px;
 
+                    // title at the top of the screen
                     Text {
                         text: "Image";
                         font-size: 16px;
                         font-weight: FontWeight.semi-bold;
                     }
 
-                    Text {
-                        text: "Before";
+                    // TODO: image with description component
+                    // original image with description
+                    VerticalLayout {
+                        spacing: 6px;
+                        alignment: stretch;
+                        Image {
+                            source: root.original_image;
+                        }
+
+                        HorizontalLayout {
+                            Rectangle { }
+
+                            Text {
+                                text: "Before";
+                                font-italic: true;
+                            }
+
+                            Rectangle { }
+                        }
                     }
 
-                    Image {
-                        source: root.original_image;
-                    }
+                    // new image with description
+                    VerticalLayout {
+                        spacing: 6px;
+                        alignment: center;
+                        Image {
+                            source: root.working_image;
+                        }
 
-                    Text {
-                        text: "After";
-                    }
+                        HorizontalLayout {
+                            Rectangle { }
 
-                    Image {
-                        source: root.working_image;
+                            Text {
+                                text: "After";
+                                font-italic: true;
+                            }
+
+                            Rectangle { }
+                        }
                     }
 
                     // filling at the bottom

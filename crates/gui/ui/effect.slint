@@ -20,10 +20,11 @@ export component EffectElement inherits Rectangle {
     function update(value: int) {
         root.value = Math.clamp(value, root.effect.min-value, root.effect.max-value);
         root.effect_changed(root.effect.id, root.value);
+        root.value_float = root.value;
     }
 
-    private property <int> value;
-    value: effect.value;
+    private property <int> value: effect.value;
+    private property <float> value_float: effect.value;  // just for display, idk how to do it better
 
     background: rgb(48, 48, 48);
     border-radius: 4px;
@@ -57,7 +58,7 @@ export component EffectElement inherits Rectangle {
             // value slider if applicable
             if effect.has_value: VerticalLayout {
                 Slider {
-                    value: root.value;
+                    value <=> root.value_float;
                     minimum: effect.min-value;
                     maximum: effect.max-value;
                     step: 1;
