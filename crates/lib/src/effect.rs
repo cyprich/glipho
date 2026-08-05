@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::MoveDirection;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Copy)]
 pub enum Effect {
     Brightness(i16),
     WrapBrightness(i16),
@@ -27,6 +27,7 @@ impl Display for Effect {
 impl Effect {
     pub fn try_from_name(name: &str, value: i32) -> Option<Self> {
         let name = name.to_lowercase().replace(' ', "");
+
         let result = match name.as_str() {
             "brightness" => Self::Brightness(value as i16),
             "wrappedbrightness" => Self::WrapBrightness(value as i16),

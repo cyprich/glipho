@@ -1,0 +1,39 @@
+export component MainImage inherits TouchArea {
+    in property <image> source;
+    in property <bool> has_image;
+    in property <bool> clickable;
+
+    preferred-width: 512px;
+    preferred-height: 256px;
+
+    mouse-cursor: root.clickable ? pointer : default;
+
+    private property <float> scale: (root.has-hover && root.clickable) ? 1.01 : 1.0;
+    animate scale {
+        duration: 100ms;
+        easing: ease-in-out;
+    }
+
+    if root.has_image: Image {
+        source: root.source;
+        width: parent.width * scale;
+        height: parent.height * scale;
+        image-fit: ImageFit.contain;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+
+    if !root.has_image: Rectangle {
+        border-radius: 6px;
+        background: rgb(48, 48, 48);
+
+        width: parent.width * scale;
+        height: parent.height * scale;
+
+        Image {
+            source: @image-url("../assets/image-off.svg");
+            height: 36px;
+            colorize: whitesmoke;
+        }
+    }
+}

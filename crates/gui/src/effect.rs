@@ -44,14 +44,18 @@ pub fn effect_to_model(effect: Effect, id: i32) -> EffectStruct {
     }
 }
 
-pub fn effects_to_model(effects: &Effects) -> slint::ModelRc<EffectStruct> {
-    let items = effects
-        .inner
-        .iter()
-        .cloned()
-        .enumerate()
-        .map(|(id, effect)| effect_to_model(effect, id as i32))
-        .collect::<Vec<_>>();
+pub fn effects_to_slint(effects: Option<&Effects>) -> slint::ModelRc<EffectStruct> {
+    let items = if let Some(effects) = effects {
+        effects
+            .inner
+            .iter()
+            .cloned()
+            .enumerate()
+            .map(|(id, effect)| effect_to_model(effect, id as i32))
+            .collect::<Vec<_>>()
+    } else {
+        Vec::default()
+    };
 
     slint::ModelRc::new(VecModel::from(items))
 }

@@ -14,6 +14,7 @@ import { ImageDescription } from "components/image_description.slint";
 import { EffectEnum } from "structs/effect_enum.slint";
 import { AddEffect } from "components/add_effect.slint";
 import { MoveDirection } from "structs/move_direction.slint";
+import { MainImage } from "components/main_image.slint";
 
 export component App inherits Window {
     maximized: true;
@@ -23,12 +24,14 @@ export component App inherits Window {
     in property <[EffectStruct]> effects;
     in property <image> original_image;
     in property <image> working_image;
+    in property <bool> has_image: false;
 
     // callbacks
     callback effect_changed(id: int, value: int);
     callback effect_added(name: string, value: int);
     callback effect_removed(id: int);
     callback effect_moved(id: int, direction: MoveDirection);
+    callback open_image();
 
     // TODO: separate this into component
     // adding effect
@@ -106,8 +109,13 @@ export component App inherits Window {
                 }
 
                 // original image
-                Image {
+                MainImage {
                     source: root.original_image;
+                    has_image: root.has_image;
+                    clickable: true;
+                    vertical-stretch: 1;
+
+                    clicked => { root.open_image() }
                 }
 
                 // arrow
@@ -118,8 +126,11 @@ export component App inherits Window {
                 }
 
                 // working image
-                Image {
+                MainImage {
                     source: root.working_image;
+                    has_image: root.has_image;
+                    clickable: false;
+                    vertical-stretch: 1;
                 }
 
                 // filling at the bottom

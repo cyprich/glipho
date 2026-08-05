@@ -15,14 +15,15 @@ use rayon::{
 
 use crate::{Effect, Effects};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 enum ImageFormat {
     Jpg,
     Png,
+    #[default]
     Other,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct Image {
     width: u32,
     height: u32,
