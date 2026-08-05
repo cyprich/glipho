@@ -1,13 +1,7 @@
 import { Slider, Button } from "std-widgets.slint";
-export struct EffectStruct {
-    id: int,
-    name: string,
-    has_value: bool,
-    value: int,
-    min_value: int,
-    max_value: int,
-    indicator_color: color
-}
+import { EffectStruct } from "../structs/effect_struct.slint";
+import { MoveDirection } from "../structs/move_direction.slint";
+import { IconButton } from "icon_button.slint";
 
 export component EffectElement inherits Rectangle {
     // input properties
@@ -16,6 +10,7 @@ export component EffectElement inherits Rectangle {
     // callbacks
     callback effect_changed(id: int, value: int);
     callback effect_removed(id: int);
+    callback effect_moved(id: int, direction: MoveDirection);
 
     function update(value: int) {
         root.value = Math.clamp(value, root.effect.min-value, root.effect.max-value);
@@ -140,23 +135,45 @@ export component EffectElement inherits Rectangle {
             }
         }
 
+        // TODO: this does not display correctly, icons are merged
         // controls
         VerticalLayout {
-            padding: 12px;
-            spacing: 4px;
-            alignment: start;
+            padding-top: 16px;
+            padding-bottom: 16px;
+            padding-left: 12px;
+            padding-right: 12px;
 
-            TouchArea {
-                mouse-cursor: pointer;
-                clicked => {
-                    root.effect_removed(root.effect.id);
+            spacing: 8px;
+            alignment: space-between;
+
+            // move up and down
+            VerticalLayout {
+                spacing: 4px;
+                alignment: start;
+
+                IconButton {
+                    icon: @image-url("../assets/chevron-up.svg");
+                    color: whitesmoke;
+                    click => {
+                        root.effect_moved(root.effect.id, MoveDirection.Up);
+                    }
                 }
 
-                Image {
-                    source: @image-url("assets/x.svg");
-                    colorize: whitesmoke;
-                    width: 20px;
-                    height: 20px;
+                IconButton {
+                    icon: @image-url("../assets/chevron-down.svg");
+                    color: whitesmoke;
+                    click => {
+                        root.effect_moved(root.effect.id, MoveDirection.Down);
+                    }
+                }
+            }
+
+            // remove
+            IconButton {
+                icon: @image-url("../assets/trash.svg");
+                color: tomato;
+                click => {
+                    root.effect_removed(root.effect.id);
                 }
             }
         }

@@ -1,0 +1,81 @@
+import { EffectEnum, EffectEnumUtils } from "../structs/effect_enum.slint";
+import { ComboBox, SpinBox, Button } from "std-widgets.slint";
+
+export component AddEffect inherits Rectangle {
+    width: 256px;
+
+    // TODO: make this the enum variant instead of name?
+    callback effect_added(name: string, value: int);
+
+    private property <EffectEnum> effect;
+    private property <int> value;
+
+    private property <bool> show_value_spinbox;
+
+    VerticalLayout {
+        padding-top: 8px;
+        spacing: 6px;
+        alignment: start;
+
+        Text {
+            text: "Add effect";
+        }
+
+        combobox := ComboBox {
+            model: [
+                "Select value...",
+                "Brightness",
+                "Wrapped Brightness",
+                "Invert",
+                "Reverse Bits",
+                "Min",
+                "Max"
+            ];
+            current-index: 0;
+
+            selected(value) => {
+                root.effect = EffectEnumUtils.from_string(value);
+                root.show_value_spinbox = root.effect != EffectEnum.None;
+            }
+        }
+
+        // value input
+        if root.show_value_spinbox && EffectEnumUtils.has_value(root.effect): VerticalLayout {
+            spacing: 6px;
+
+            SpinBox {
+                value <=> root.value;
+                minimum: EffectEnumUtils.min(root.effect);
+                maximum: EffectEnumUtils.max(root.effect);
+
+                // edited(value) => {
+                //     root.effect = EffectEnumUtils.from_string(value);
+                // }
+            }
+
+            // limits (e.g. 0 to 255)
+            Text {
+                text: "\{EffectEnumUtils.min(root.effect)} to \{EffectEnumUtils.max(root.effect)}";
+                font-italic: true;
+            }
+        }
+
+        // confirm button
+        Button {
+            text: "Confirm";
+            width: 128px;
+            enabled: root.effect != EffectEnum.None;
+
+            clicked => {
+                root.effect_added(EffectEnumUtils.to_string(root.effect), root.value);
+
+                // reset component to default values
+                combobox.current-index = 0;
+                root.value = 0;
+                root.show_value_spinbox = false;
+                root.effect = EffectEnum.None;
+                // self.enabled = root.effect != EffectEnum.None;
+            }
+        }
+    }
+}

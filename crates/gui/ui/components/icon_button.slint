@@ -1,0 +1,19 @@
+export component IconButton inherits TouchArea {
+    in property <image> icon;
+    in property <color> color;
+    callback click();
+
+    TouchArea {
+        mouse-cursor: pointer;
+        clicked => {
+            root.click();
+        }
+
+        Image {
+            source: root.icon;
+            colorize: color;
+            width: 20px;
+            height: 20px;
+        }
+    }
+}

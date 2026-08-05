@@ -6,11 +6,14 @@ use log::{info, warn};
 use simple_logger::SimpleLogger;
 use slint::ComponentHandle;
 
-use crate::{effect::effects_to_model, image::image_to_slint};
+use crate::{
+    effect::effects_to_model, image::image_to_slint, move_direction::move_direction_from_slint,
+};
 
 mod colors;
 mod effect;
 mod image;
+mod move_direction;
 
 slint::include_modules!();
 
@@ -29,7 +32,7 @@ fn main() -> anyhow::Result<()> {
 
     // temp sample input image
     info!("Loading input image");
-    let original_image = Image::open("sample2.jpg").unwrap();
+    let original_image = Image::open("sample3.jpg").unwrap();
     let mut working_image = original_image.clone();
     working_image.effects(&effects);
 
@@ -83,6 +86,23 @@ fn main() -> anyhow::Result<()> {
     let new_image = Rc::clone(&original_image);
     ui.on_effect_removed(move |id| {
         new_effects.borrow_mut().remove(id as usize);
+        let mut image = new_image.as_ref().clone();
+        image.effects(&new_effects.borrow());
+        if let Some(ui) = ui_weak.upgrade() {
+            ui.set_effects(effects_to_model(&new_effects.borrow()));
+            ui.set_working_image(image_to_slint(&image));
+        }
+    });
+
+    // move effect
+    let ui_weak = ui.as_weak();
+    let new_effects = Rc::clone(&effects);
+    let new_image = Rc::clone(&original_image);
+    ui.on_effect_moved(move |id, direction| {
+        let direction: lib::MoveDirection = move_direction_from_slint(&direction);
+        new_effects
+            .borrow_mut()
+            .move_effect(id as usize, &direction);
         let mut image = new_image.as_ref().clone();
         image.effects(&new_effects.borrow());
         if let Some(ui) = ui_weak.upgrade() {

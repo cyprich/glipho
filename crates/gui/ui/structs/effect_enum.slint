@@ -1,0 +1,62 @@
+export enum EffectEnum { None, Brightness, WrapBrightness, Invert, ReverseBits, Min, Max }
+
+export global EffectEnumUtils {
+    // pure = doesnt change state i guess
+    pure public function to_string(effect: EffectEnum) -> string {
+        if effect == EffectEnum.Brightness {
+            return "Brightness";
+        } else if effect == EffectEnum.WrapBrightness {
+            return "Wrapped Brightness";
+        } else if effect == EffectEnum.Invert {
+            return "Invert";
+        } else if effect == EffectEnum.ReverseBits {
+            return "Reverse Bits";
+        } else if effect == EffectEnum.Min {
+            return "Min";
+        } else if effect == EffectEnum.Max {
+            return "Max";
+        }
+        return "None";
+    }
+
+    pure public function from_string(value: string) -> EffectEnum {
+        if value == "Brightness" {
+            return Brightness;
+        } else if value == "Wrapped Brightness" {
+            return WrapBrightness;
+        } else if value == "Invert" {
+            return Invert;
+        } else if value == "Reverse Bits" {
+            return ReverseBits;
+        } else if value == "Min" {
+            return Min;
+        } else if value == "Max" {
+            return Max;
+        }
+        return None;
+    }
+
+    pure public function has_value(effect: EffectEnum) -> bool {
+        effect == EffectEnum.Brightness
+            || effect == EffectEnum.WrapBrightness
+            || effect == EffectEnum.Min
+            || effect == EffectEnum.Max
+    }
+    pure public function min(effect: EffectEnum) -> int {
+        if effect == EffectEnum.Brightness || effect == EffectEnum.WrapBrightness {
+            return -255;
+        } else if effect == EffectEnum.Min || effect == EffectEnum.Max {
+            return 0;
+        }
+        return 0;
+    }
+    pure public function max(effect: EffectEnum) -> int {
+        if effect == EffectEnum.Brightness
+            || effect == EffectEnum.WrapBrightness
+            || effect == EffectEnum.Min
+            || effect == EffectEnum.Max {
+            return 255;
+        }
+        return 0;
+    }
+}

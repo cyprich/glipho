@@ -3,6 +3,8 @@ use std::{fmt::Display, fs, path::Path};
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
+use crate::MoveDirection;
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum Effect {
     Brightness(i16),
@@ -124,5 +126,20 @@ impl Effects {
 
     pub fn remove(&mut self, index: usize) -> Effect {
         self.inner.remove(index)
+    }
+
+    pub fn move_effect(&mut self, effect_id: usize, direction: &MoveDirection) {
+        if (matches!(direction, MoveDirection::Up) && effect_id == 0)
+            || (matches!(direction, MoveDirection::Down) && effect_id == self.len())
+        {
+            return;
+        }
+
+        let new_id = match direction {
+            MoveDirection::Up => effect_id - 1,
+            MoveDirection::Down => effect_id + 1,
+        };
+
+        self.inner.swap(effect_id, new_id);
     }
 }

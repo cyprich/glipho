@@ -1,0 +1,20 @@
+export component ImageDescription inherits VerticalLayout {
+    in property <image> image;
+    in property <string> description;
+
+    VerticalLayout {
+        spacing: 8px;
+        alignment: stretch;
+        padding-bottom: 4px;
+
+        Image {
+            source: root.image;
+        }
+
+        Text {
+            text: root.description;
+            font-italic: true;
+            horizontal-alignment: center;
+        }
+    }
+}
