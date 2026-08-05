@@ -7,7 +7,7 @@ use std::{
 
 use anyhow::{Context, Result};
 use image::{ImageReader, RgbImage, RgbaImage};
-use log::{debug, info, trace};
+use log::{info, trace};
 use rayon::{
     iter::ParallelIterator,
     slice::{ParallelSlice, ParallelSliceMut},
@@ -48,7 +48,7 @@ impl Image {
         let path = path.as_ref();
         let time = Instant::now();
 
-        debug!("Reading '{}'", path_name);
+        trace!("Reading '{}'", path_name);
         let reader = ImageReader::open(path).context("Failed to read image path")?;
         trace!("Reader done in {}", &time.elapsed().as_secs_f32());
         let reader_format = reader
@@ -56,18 +56,18 @@ impl Image {
             .context("Failed to determine image format")?;
         trace!("Format done in {}", &time.elapsed().as_secs_f32());
 
-        debug!("Decoding");
+        trace!("Decoding");
         let img = reader.decode().context("Failed to decode image")?;
         trace!("Decode done in {}", &time.elapsed().as_secs_f32());
 
-        debug!("Converting to RGBA8");
+        trace!("Converting to RGBA8");
         let img = img.into_rgba8();
         trace!("Convert done in {}", &time.elapsed().as_secs_f32());
 
         // let img = image::open(path)?;
         // let img = img.into_rgba8();
 
-        debug!(
+        info!(
             "Loaded '{}' in {}s",
             path_name,
             time.elapsed().as_secs_f32()
@@ -142,7 +142,7 @@ impl Image {
             Effect::Max(val) => self.apply_closure(|x| *x = min(*x, *val)),
         };
 
-        info!(
+        trace!(
             "Applied layer '{}' in {}s",
             layer,
             time.elapsed().as_secs_f32()
@@ -156,6 +156,7 @@ impl Image {
         for l in &effects.inner {
             self.effect(l);
         }
+
         info!(
             "Applied {} layers in {}s",
             &effects.len(),

@@ -1,19 +1,21 @@
 use std::{cell::RefCell, rc::Rc};
 
 use anyhow::Context;
-use lib::{Effect, Image};
+use lib::Effect;
 use rfd::FileDialog;
 use simple_logger::SimpleLogger;
 use slint::ComponentHandle;
 
 use crate::{
     effect::effects_to_slint, image::image_to_slint, move_direction::move_direction_from_slint,
+    state::AppState,
 };
 
 mod colors;
 mod effect;
 mod image;
 mod move_direction;
+mod state;
 
 slint::include_modules!();
 
@@ -26,123 +28,67 @@ fn main() -> anyhow::Result<()> {
     }
     logger.init().context("Failed to initiate simple_logger")?;
 
-    // default structs
-    let original_image = Rc::new(RefCell::new(None::<lib::Image>));
-    let effects = Rc::new(RefCell::new(lib::Effects::default()));
-
     // run app
     let ui = App::new().context("Failed to initiate App")?;
+    let state = Rc::new(RefCell::new(AppState::new(&ui)));
 
     // input structs
     ui.set_effects(effects_to_slint(None));
     ui.set_original_image(image_to_slint(None));
     ui.set_working_image(image_to_slint(None));
 
-    // TODO: a lot of duplicate code
-    // change effect
-    let ui_weak = ui.as_weak();
-    let new_image = Rc::clone(&original_image);
-    let new_effects = Rc::clone(&effects);
-    ui.on_effect_changed(move |id, value| {
-        if let Some(image) = new_image.borrow_mut().as_mut() {
-            let mut new_effects = new_effects.borrow_mut();
-            new_effects.change_value(id as usize, value);
-
-            let mut image = image.clone();
-            image.effects(&new_effects);
-
-            if let Some(ui) = ui_weak.upgrade() {
-                ui.set_working_image(image_to_slint(Some(&image)));
+    {
+        // change effect
+        let state = Rc::clone(&state);
+        ui.on_effect_changed(move |id, value| {
+            let mut state = state.borrow_mut();
+            state.effects.change_value(id as usize, value);
+            state.redraw_working_image(true);
+        });
+    }
+    {
+        // add effect
+        let state = Rc::clone(&state);
+        ui.on_effect_added(move |name, value| {
+            if let Some(effect) = Effect::try_from_name(&name, value) {
+                let mut state = state.borrow_mut();
+                state.effects.push(effect);
+                state.redraw_working_image(true);
             }
-        }
-    });
+        });
+    }
+    {
+        // remove effect
+        let state = Rc::clone(&state);
+        ui.on_effect_removed(move |id| {
+            let mut state = state.borrow_mut();
+            state.effects.remove(id as usize);
+            state.redraw_working_image(true);
+        });
+    }
+    {
+        // move effect
+        let state = Rc::clone(&state);
+        ui.on_effect_moved(move |id, direction| {
+            let mut state = state.borrow_mut();
+            let direction = move_direction_from_slint(&direction);
+            state.effects.move_effect(id as usize, &direction);
+            state.redraw_working_image(true);
+        });
+    }
 
-    // add effect
-    let ui_weak = ui.as_weak();
-    let new_image = Rc::clone(&original_image);
-    let new_effects = Rc::clone(&effects);
-    ui.on_effect_added(move |name, value| {
-        if let Some(image) = new_image.borrow_mut().as_mut()
-            && let Some(effect) = Effect::try_from_name(&name, value)
-        {
-            let mut new_effects = new_effects.borrow_mut();
-            new_effects.push(effect);
+    {
+        let state = Rc::clone(&state);
+        ui.on_open_image(move || {
+            let path = FileDialog::new()
+                .add_filter("Image", &["png", "jpg"])
+                .set_title("Open image")
+                .pick_file();
 
-            let mut image = image.clone();
-            image.effects(&new_effects);
-
-            if let Some(ui) = ui_weak.upgrade() {
-                ui.set_effects(effects_to_slint(Some(&new_effects)));
-                ui.set_working_image(image_to_slint(Some(&image)));
-            }
-        }
-    });
-
-    // remove effect
-    let ui_weak = ui.as_weak();
-    let new_image = Rc::clone(&original_image);
-    let new_effects = Rc::clone(&effects);
-    ui.on_effect_removed(move |id| {
-        if let Some(image) = new_image.borrow_mut().as_mut() {
-            let mut new_effects = new_effects.borrow_mut();
-            new_effects.remove(id as usize);
-
-            let mut image = image.clone();
-            image.effects(&new_effects);
-
-            if let Some(ui) = ui_weak.upgrade() {
-                ui.set_effects(effects_to_slint(Some(&new_effects)));
-                ui.set_working_image(image_to_slint(Some(&image)));
-            }
-        }
-    });
-
-    // move effect
-    let ui_weak = ui.as_weak();
-    let new_image = Rc::clone(&original_image);
-    let new_effects = Rc::clone(&effects);
-    ui.on_effect_moved(move |id, direction| {
-        if let Some(image) = new_image.borrow_mut().as_mut() {
-            let direction: lib::MoveDirection = move_direction_from_slint(&direction);
-
-            let mut new_effects = new_effects.borrow_mut();
-            new_effects.move_effect(id as usize, &direction);
-
-            let mut image = image.clone();
-            image.effects(&new_effects);
-
-            if let Some(ui) = ui_weak.upgrade() {
-                ui.set_effects(effects_to_slint(Some(&new_effects)));
-                ui.set_working_image(image_to_slint(Some(&image)));
-            }
-        }
-    });
-
-    // open image
-    let ui_weak = ui.as_weak();
-    let original_image = Rc::clone(&original_image);
-    let effects = Rc::clone(&effects);
-    ui.on_open_image(move || {
-        let path = FileDialog::new()
-            .add_filter("Image", &["png", "jpg"])
-            .set_title("Open image")
-            .pick_file();
-
-        if let Some(path) = path
-            && let Ok(image) = Image::open(path)
-        {
-            *original_image.borrow_mut() = Some(image.clone());
-            let mut working_image = image;
-
-            working_image.effects(&effects.borrow());
-
-            if let Some(ui) = ui_weak.upgrade() {
-                ui.set_original_image(image_to_slint(original_image.borrow().as_ref()));
-                ui.set_working_image(image_to_slint(Some(&working_image)));
-                ui.set_has_image(true);
-            }
-        }
-    });
+            let mut state = state.borrow_mut();
+            state.load_image(path);
+        });
+    }
 
     ui.run().context("Failed to run App")?;
 
