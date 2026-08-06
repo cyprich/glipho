@@ -19,12 +19,17 @@ import { MainImage } from "components/main_image.slint";
 export component App inherits Window {
     maximized: true;
     title: "glipho";
+    preferred-width: 1280px;
+    preferred-height: 720px;
 
     // in properties
     in property <[EffectStruct]> effects;
     in property <image> original_image;
     in property <image> working_image;
     in property <bool> has_image: false;
+
+    // loading
+    in property <bool> is_loading;
 
     // callbacks
     callback effect_changed(id: int, value: int);
@@ -118,11 +123,29 @@ export component App inherits Window {
                     clicked => { root.open_image() }
                 }
 
-                // arrow
-                Image {
+                // icon: all done
+                if !root.is_loading: Image {
                     colorize: whitesmoke;
                     height: 24px;
                     source: @image-url("assets/chevrons-down.svg");
+                }
+
+                // // icon: loading
+                if root.is_loading: Image {
+                    colorize: whitesmoke;
+                    height: 24px;
+                    source: @image-url("assets/refresh-cw.svg");
+
+                    transform-rotation: 0deg;
+
+                    animate transform-rotation {
+                        duration: 1500ms;
+                        iteration-count: -1;
+                    }
+
+                    init => {
+                        self.transform-rotation = 360deg;
+                    }
                 }
 
                 // working image

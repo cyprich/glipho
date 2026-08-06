@@ -105,9 +105,9 @@ cargo run --release --bin gui
 ## TODOs and Future plans
 
 - Make it work :)
-- async + show progress
+- show progress
 - apply effects only from updated one (not from the start if not necessary)
-- Downsampling
-- Audio Layers
-- Modifiers (apply to channel, apply to bits)
+- downsampling
+- audio Layers
+- modifiers (apply to channel, apply to bits)
 - GPU acceleration
